@@ -1,0 +1,440 @@
+Keyword :: one of
+  `and` `as` `assert` `await` `constraint` `else` `exception` `external` `false` `for` `if` `in` `include` `lazy` `let` `list` `module` `mutable` `of` `open` `private` `rec` `switch` `true` `try` `type` `when` `while`
+
+Letter ::
+  Lletter
+  Uletter
+
+Lletter :: one of
+  `a` `b` `c` `d` `e` `f` `g` `h` `i` `j` `k` `l` `m` `n` `o` `p` `q` `r` `s` `t` `u` `v` `w` `x` `y` `z`
+
+Uletter :: one of
+  `A` `B` `C` `D` `E` `F` `G` `H` `I` `J` `K` `L` `M` `N` `O` `P` `Q` `R` `S` `T` `U` `V` `W` `X` `Y` `Z`
+
+DecimalDigit :: one of
+  `0` `1` `2` `3` `4` `5` `6` `7` `8` `9`
+
+DecimalDigits ::
+  DecimalDigit
+  DecimalDigits DecimalDigit
+  DecimalDigits `_`
+
+HexDigit :: one of
+  `0` `1` `2` `3` `4` `5` `6` `7` `8` `9` `a` `b` `c` `d` `e` `f` `A` `B` `C` `D` `E` `F`
+
+HexDigits ::
+  HexDigit
+  HexDigits HexDigit
+  HexDigits `_`
+
+Lident ::
+  LidentName but not Keyword
+
+LidentName ::
+  LidentFirst
+  LidentName IdentRest
+
+LidentFirst ::
+  Lletter
+  `_`
+
+Uident ::
+  UidentName
+
+UidentName ::
+  UidentFirst
+  UidentName IdentRest
+
+UidentFirst ::
+  Uletter
+
+IdentRest ::
+  Letter
+  DecimalDigit
+  `_`
+  `'`
+
+Integer[Suffix] ::
+  IntegerLiteral
+  [+Suffix] IntegerLiteral suffix
+
+Float[Suffix] ::
+  FloatLiteral
+  [+Suffix] FloatLiteral suffix
+
+IntegerLiteral ::
+  NonHexIntegerLiteral
+  HexIntegerLiteral
+
+NonHexIntegerLiteral ::
+  DecimalLiteral
+  BinaryIntegerLiteral
+  OctalIntegerLiteral
+
+FloatLiteral ::
+  NonHexIntegerLiteral DecimalFractional
+  NonHexIntegerLiteral DecimalExponent
+  NonHexIntegerLiteral DecimalFractional DecimalExponent
+  HexIntegerLiteral HexFractional
+  HexIntegerLiteral HexExponent
+  HexIntegerLiteral HexFractional HexExponent
+
+DecimalFractional ::
+  `.` DecimalDigits
+
+HexFractional ::
+  `.` HexDigits
+
+DecimalExponent ::
+  ExponentChar DecimalDigits
+  ExponentChar `+` DecimalDigits
+  ExponentChar `-` DecimalDigits
+
+HexExponent ::
+  ExponentChar HexDigits
+  ExponentChar `+` HexDigits
+  ExponentChar `-` HexDigits
+
+ExponentChar :: one of
+  `e` `E` `p` `P`
+
+DecimalLiteral ::
+  DecimalDigits
+
+BinaryIntegerLiteral ::
+  `0b` DecimalDigits
+  `0B` DecimalDigits
+
+OctalIntegerLiteral ::
+  `0o` DecimalDigits
+  `0O` DecimalDigits
+
+HexIntegerLiteral ::
+  `0x` HexDigits
+  `0X` HexDigits
+
+Suffix :: one of
+  `g` `h` `i` `j` `k` `l` `m` `o` `p` `q` `r` `s` `t` `u` `v` `w` `x` `y` `z` `G` `H` `I` `J` `K` `L` `M` `N` `O` `P` `Q` `R` `S` `T` `U` `V` `W` `X` `Y` `Z`
+
+Specifications :
+  Specification
+  Specification `;` Specifications 
+
+Implementations :
+  Implementation
+  Implementation `;` Implementations
+
+Specification :
+  SignLetDescription
+  TypeDefinition
+  TypeExtension
+  External
+  ExceptionDefinition
+  OpenDescription
+  IncludeModuleType
+  ModuleSpecification
+  StandaloneAttribute
+  ExtensionModuleLevel
+  Attribute Specification
+
+TypeDefinition :
+  [empty]
+
+//TODO
+Implementation :
+  [empty]
+
+
+TypeExtension :
+  [empty]
+
+External :
+  [empty]
+
+ExceptionDefinition :
+  [empty]
+
+OpenDescription :
+  [empty]
+
+IncludeModuleType :
+  [empty]
+
+ModuleSpecification :
+  [empty]
+
+StandaloneAttribute :
+  [empty]
+
+ExtensionModuleLevel :
+  [empty]
+
+Ident :
+  Uident
+  Lident
+
+SignLetDescription :
+  `let` Lident `:` PolyTypeExpression
+
+PolyTypeExpression :
+  TypeExpression[+Es6Arrow, +Alias]
+  TypeVars `.` TypeExpression[+Es6Arrow, +Alias]
+  TypeVar `=>` TypeExpression[+Es6Arrow, ~Alias]
+
+TypeVars :
+  TypeVar
+  TypeVar TypeVars
+
+TypeVar :
+  `'` Lident
+
+TypeExpression[Es6Arrow, Alias] :
+  [+Es6Arrow] Es6ArrowType
+  AtomicTypeExpression ArrowTypeRest[?Es6Arrow]
+  [+Alias] TypeExpression[?Es6Arrow, ?Alias] `as` TypeVar
+  Attribute TypeExpression[?Es6Arrow, ?Alias]
+
+Es6ArrowType :
+  Es6ArrowLHS ArrowTypeRest[+Es6Arrow]
+
+Es6ArrowLHS :
+  `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias]
+  `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias] `=` `?`
+  CoverParenthesizedTypeParameters
+
+CoverParenthesizedTypeParameters :
+  `(` `)`
+  `(` TypeParameters `)`
+
+TypeParameters :
+  TypeParameter
+  TypeParameter `,` TypeParameters
+
+TypeParameter :
+  TypeExpression[+Es6Arrow, +Alias]
+  `~` Lident `:` TypeExpression[+Es6Arrow, ~Alias]
+  `~` Lident `:` TypeExpression[+Es6Arrow, ~Alias] `=` `?`
+  Lident TypeConstructorArgs? ArrowTypeRest[+Es6Arrow]
+  `.` TypeParameter
+  Attribute TypeParameter
+  
+ArrowTypeRest[Es6Arrow] :
+  [empty]
+  [+Es6Arrow] `=>` TypeExpression[+Es6Arrow, ~Alias]
+
+TypeConstructorArgs :
+  `<` `>`
+  `<` TypeExpressions `>`
+
+AtomicTypeExpression :
+  `'` Ident
+  `_`
+  CoverParenthesizedTypeExpressions
+  PolymorphicVariantType
+
+CoverParenthesizedTypeExpressions :
+  `(` `)`
+  `(` TypeExpressions `)`
+
+TypeExpressions :
+  TypeExpression[+Es6Arrow, +Alias]
+  TypeExpressions `,` TypeExpression[+Es6Arrow, +Alias]
+
+PolymorphicVariantType :
+  `[` `>` TagSpec? TagSpecs? `]`
+  `[` `<` TagSpecFull TagSpecFulls? TagNames? `]`
+  `[` `<` `|` TagSpecFull TagSpecFulls? TagNames? `]`
+  `[` TagSpecFirst TagSpecs? `]`
+
+TagSpec :
+  PolymorphicVariantTypeSpecHash[~Full]
+  TypeExpression[+Es6Arrow, +Alias]
+  Attribute TagSpec
+
+TagSpecFull :
+  PolymorphicVariantTypeSpecHash[+Full]
+  TypeExpression[+Es6Arrow, +Alias]
+  Attribute TagSpecFull
+
+TagSpecFirst :
+  `|` TagSpec
+  PolymorphicVariantTypeSpecHash[~Full]
+  TypeExpression[+Es6Arrow, +Alias]
+  Attribute TagSpecFirst
+
+PolymorphicVariantTypeSpecHash[Full] :
+  HashIdent
+  PolymorphicVariantTypeSpecHash[?Full] PolymorphicVariantTypeArgs
+  [+Full] PolymorphicVariantTypeSpecHash[?Full] `&` PolymorphicVariantTypeArgs
+
+PolymorphicVariantTypeArgs :
+  CoverParenthesizedTypeExpressions
+
+HashIdent :
+  `#` Ident
+  `#` Integer[~Suffix]
+
+TagNames :
+  `>`
+  TagNames TagName
+
+TagName :
+  HashIdent
+
+TagSpecs :
+  `|` TagSpec
+  TagSpecs `|` TagSpec
+
+TagSpecFulls :
+  `|` TagSpecFull
+  TagSpecFulls `|` TagSpecFull
+
+Attribute :
+  `@` AttributeId
+  `@` AttributeId Payload
+
+AttributeId :
+  AttributeIdElem
+  AttributeIdElem `.` AttributeId
+
+AttributeIdElem :
+  Keyword
+  Ident
+
+Payload :
+  `(` `)`
+  `(` `:` `)`
+  `(` `:` Specifications `)`
+  `(` `:` TypeExpression[+Es6Arrow, +Alias] `)`
+  `(` `?` Pattern[+Alias, +Or] `)`
+  `(` `?` Pattern[+Alias, +Or] `when` Expression_OrdExprContext `)`
+  `(` `?` Pattern[+Alias, +Or] `if` Expression_OrdExprContext `)`
+  `(` Implementations `)`
+
+PatternGuard :
+  [empty] 
+  `when` Expression_WhenExprContext
+  `if` Expression_WhenExprContext
+
+Pattern[Alias, Or] :
+  `true`
+  `false`
+  Constant
+  Interval
+  TemplateConstant
+  TuplePattern
+  ArrayPattern
+  RecordPattern
+  `_`
+  Lident TemplateConstant?
+  ModulePath ConstructorPatternArgs?
+  TagName
+  `#...` ValuePath
+  HashIdent
+  `exception` Pattern[~Alias, ~Or]
+  `lazy` Pattern[~Alias, ~Or]
+  `list` ListPattern
+  `module` ModulePattern
+  Extension
+  Attribute Pattern[?Alias, ?Or]
+  [+Alias] Pattern[?Alias, ?Or] `as` `'`Lident
+  [+Or] Pattern[?Alias, ?Or] `|` Pattern[?Alias, ~Or]
+
+//TODO : String, Codepoint, +-
+Constant :
+  Integer[+Suffix]
+  `+` Integer[+Suffix]
+  `-` Integer[+Suffix]
+  Float[+Suffix]
+  `+` Float[+Suffix]
+  `-` Float[+Suffix]
+
+Interval :
+  Constant `..` Constant
+
+//TODO
+TemplateConstant :
+  [empty]
+
+ConstrainedPatterns :
+  ConstrainedPattern
+  ConstrainedPattern `,` ConstrainedPatterns
+
+RecordPatternRows :
+  RecordPatternRow
+  RecordPatternRow `,` RecordPatternRows
+
+TuplePattern :
+  `(` `)`
+  `(` ConstrainedPatterns `)`
+
+ArrayPattern :
+  `[` `]`
+  `[` ConstrainedPatterns `]`
+
+RecordPattern :
+  `{` `}`
+  `{` RecordPatternRows `}`
+
+ConstructorPatternArgs :
+  `(``)`
+  `(` ConstrainedPatterns `)`
+
+ListPattern :
+  `{` `}`
+  `{` ConstrainedPatterns `}`
+  `{` `...` ConstrainedPatterns `}`
+
+ModulePattern :
+  `(` `)`
+  `(` Uident `)`
+  `(` Uident `:` PackageTypeWithAttr `)`
+
+PackageTypeWithAttr :
+  PackageType
+  Attribute PackageType
+
+Extension :
+  `%` AttributeId
+  `%` AttributeId Payload
+
+ConstrainedPattern :
+  Pattern[+Alias, +Or]
+  Pattern[+Alias, +Or] `:` TypeExpression[+Es6Arrow, +Alias]
+
+RecordPatternRow :
+  `...` RecordPatternRowField
+  RecordPatternRowField
+  `?` RecordPatternRowField
+  `_`
+  Attribute RecordPatternRow
+
+ModuleName :
+  Uident
+
+ModulePath :
+  ModuleName
+  ModuleName `.` ModulePath
+
+ValueName :
+  Lident
+
+ValuePath :
+  ValueName
+  ModulePath `.` ValueName
+
+ModuleOrValuePath :
+  ValueName
+  ModulePath
+  ModulePath `.` ValueName
+
+RecordPatternRowField :
+  ValuePath 
+  ValuePath `:` Pattern[+Alias, +Or]
+  ValuePath `:` `?` Pattern[+Alias, +Or]
+
+Expression_OrdExprContext :
+  [empty]
+
+Expression_WhenExprContext :
+  [empty]

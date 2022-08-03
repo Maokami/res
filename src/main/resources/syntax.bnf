@@ -1,0 +1,585 @@
+<Specifications> ::=
+  | <Specification>
+  | <Specifications> <Separator> <Specification>
+
+<Implementations> ::=
+  | <Implementation>
+  | <Implementations> <Separator> <Implementation>
+
+<Specification> ::=
+  | <SignLetDescription>
+  | <TypeDefinition>
+  | <TypeExtension>
+  | <External>
+  | <ExceptionDefinition>
+  | <OpenDescription>
+  | include <ModuleType>
+  | <ModuleSpecification>
+  | <StandaloneAttribute>
+  | <ExtensionModuleLevel>
+  | <Attribute> <Specification>
+
+<Implementation> ::=
+  | <OpenDescription>
+  | <LetBindings>
+  | <TypeDefinition>
+  | <TypeExtension>
+  | <External>
+  | <ExceptionDefinition>
+  | include <ModuleExpression>
+  | <ModuleOrModuleTypeImplOrPackExpression>
+  | <StandaloneAttribute>
+  | <ExtensionModuleLevel>
+  | <Expression>
+  | <Attribute> <Implementation>
+
+
+<StringLiteral> (* Any String *)
+
+<Letter> ::=
+  | A ... Z
+  | a ... z
+
+<Lident> ::=
+  | (a...z|_) {(<Letter>|0 ... 9| _ | ' )}
+
+<Uident> ::=
+  | (A...Z|_) {(<Letter>|0 ... 9| _ | ' )}
+
+<Ident> ::=
+  | <Lident>
+  | <Uident>
+
+<Separator> ::=
+  | ;
+  | \n
+  | \r
+
+<ConstrDefinition> ::=
+  | <Uident> <ConstrDeclArgs>
+  | <Uident> = <ModulePath>
+  | <Uident> : <TypeExpression>
+
+TODO : Maybe wrong
+<ConstrDeclArgs> ::=
+| '(''{' (.|..) '}'')' [:<TypeExpression>]
+| '(''{' ... '}'')' [:<TypeExpression>]
+| '(''{' {<Attribute>} '}'')' [:<TypeExpression>]
+| '(''{' {<Attribute>} <StringLiteral> '}'')' [:<TypeExpression>]
+| '('<TypeExpressions>')'[:<TypeExpression>]
+
+<SignLetDescription> ::=
+  | let <Lident> : <PolyTypeExpression>
+
+<LetBinding> ::=
+  | <Pattern> = <Expression> [:> <TypeExpression>]
+  | <Pattern> : type {<Lident>} . <TypeExpression> = <Expression>
+  | <Pattern> : <PolyTypeExpression> = <Expression> [:> <TypeExpression>]
+
+<ModuleName> ::=
+  | <Uident>
+
+<ModulePath> ::=
+  | <ModuleName>{.<ModuleName>}
+
+<ValueName> ::=
+  | <Lident>
+
+<ValuePath> ::=
+  | [<ModulePath>.] <ValueName>
+
+<ModuleOrValuePath> ::=
+  | <ModulePath>
+  | [<ModulePath>.] <ValueName>
+
+<ModuleExpression> ::=
+  | <FunctorModuleExpr>
+  | <PrimaryModExpr>
+  | <Attribute> <ModuleExpression>
+
+<FunctorModuleExpr> ::=
+  | <FunctorArgs> [:<AtomicModuleType>] => <ModuleExpression>
+
+<PrimaryModExpr> ::=
+  | <AtomicModuleExpr>{'('')'}
+  | <AtomicModuleExpr>{'('<ModuleExpression>[:<ModuleType>] {,<ModuleExpression>[:<ModuleType>]}')'}
+
+<ModuleType> ::=
+  | <Es6ArrowFunctor>
+  | <AtomicModuleType>
+  | <Attribute> <ModuleType>
+
+<Es6ArrowFunctor> ::=
+  | <FunctorArgs> => <ModuleType>
+  | <Attribute> <Es6ArrowFunctor>
+
+<AtomicModuleExpr> ::=
+  | <ModulePath>
+  | '{'<Implementations>'}'
+  | '('<ModuleExpression> [: ModuleType]')'
+  | unpack '('<Expression> [:{<Attribute>} <PackageType>]')'
+  | <Extension>
+
+<AtomicModuleType> ::=
+  | <ModuleOrValuePath>
+  | '('<ModuleType>')'
+  | '{'<Specifications>'}'
+  | module type of <ModuleExpression>
+  | <Extension>
+
+<FunctorArgs> ::=
+  | '(' ')'
+  | '('<FunctorArg> {,<FunctorArg>}')'
+
+<FunctorArg> ::=
+  | <Uident> : <ModuleType>
+  | <ModulePath>
+  | _ : <ModuleType>
+  | '('')'
+  | <Attribute> <FunctorArg>
+
+<TypeParams> ::=
+  | '<''>'
+  | '<'<TypeParam>{,<TypeParam>} '>'
+
+<TypeParam> ::=
+  | [(+|-)] '<Ident>
+  | [(+|-)] _
+
+<PolyTypeExpression> ::=
+  | <TypeExpression>@++
+  | <Typevar> {<Typevar>} . <TypeExpression>@++
+  | <Typevar> => <TypeExpression>@+-
+
+<TypeVar> ::=
+  | '<Lident>
+
+<TypeExpression> (es6Arrow, alias) ::=
++~| <Es6ArrowType>
+-~| <AtomicTypeExpression>
+~~| <AtomicTypeExpression> <ArrowTypeRest>@?
+~+| <TypeExpression>@?? as '<Lident>
+  | <Attribute> <TypeExpression>@??
+
+<Es6ArrowType> ::=
+  | ~ <Lident>: <TypeExpression>@-- [=?] => <TypeExpression>@+-
+  | '('<TypeParameters>')'=> <TypeExpression>@+-
+
+<ArrowTypeRest> (es6Arrow) ::=
++ | => <TypeExpression>@+-
+
+<AtomicTypeExpression> ::=
+  | '<Ident>
+  | _
+  | '('<TypeExpressions>')'
+  | <PolymorphicVariantType>
+  | <ValuePath> <TypeConstructorArgs>
+  | module '(' <PackageType> ')'
+  | <Extension>
+  | <RecordOrObjectType>
+
+<PolymorphicVariantType> ::=
+  | '[''>''['<TagSpec>']'{'|'<TagSpec>}]'
+  | '[''<'['|'] <TagSpecFull> {'|'<TagSpecFull>}<TagNames>']'
+  | '['<TagSpecFirst>{'|'<TagSpec>}']'
+
+<TagSpecFirst> ::=
+  | <TagName> ['('TypeExpression')']
+  | <TypeExpression> '|' <TagSpec>
+  | <Attribute> <TagSpecFirst>
+
+<TagSpec> ::=
+  | <TagName> ['('TypeExpression')']
+  | <TypeExpression>
+  | <Attribute> <TagSpec>
+
+<TagSpecFull> ::=
+  | <TagName> ['('[&]TypeExpression { & TypeExpression}')']
+  | <TypeExpression>
+  | <Attribute> <TagSpecFull>
+
+<TagNames> ::=
+  | ['>' {<TagName>}]
+
+<TagName> ::=
+  | <HashIdent>
+
+TODO : This IntegerLiteral has no suffix
+<HashIdent>
+  | # <StringLiteral>
+  | # <IntegerLiteral>
+
+<TypeParameters> ::=
+  | (* Empty *)
+  | <TypeParameter> {,<TypeParameter>}
+
+<TypeParameter> ::=
+  | <TypeExpression>
+  | ~ <Lident> : <TypeExpression> [= ?]
+  | <Lident> <TypeConstructorArgs>
+
+<TypeConstructorArgs> ::=
+  | ['<'<TypeExpressions>'>']
+
+<TypeExpressions> ::=
+  | (* Empty *)
+  | <TypeExpression>@++{,<TypeExpression>@++}
+
+<PackageType> ::=
+  | <ModuleOrValuePath>
+  | <ModuleOrValuePath> with <PackageConstraint> {and <PackageConstraint>}
+
+<RecordOrObjectType> ::=
+  | '{'[(.|..)] '}'
+  | '{'[(.|..)] <StringFieldDeclaration> {<StringFieldDeclaration>}'}'
+
+<StringFieldDeclaration> ::=
+  | <StringLiteral>: <PolyTypeExpression>
+  | ... <TypeExpression>
+  | <Attribute> <StringFieldDeclaration>
+
+<OpenDescription> ::=
+  | open[!] <ModulePath>
+
+<LetBindings> ::=
+  | let [rec] <LetBinding>
+  | <LetBindings> and <LetBinding>
+
+<TypeDefinition> ::=
+  | type [(rec|nonrec)] <TypeDef> {and <TypeDef>}
+
+<TypeDef> ::=
+  | <TypeConstrName> [<TypeParams>] [= <TypeEquationAndRepresentation>] {<TypeConstraint>}
+
+ <TypeConstrName> ::=
+  | <Lident>
+
+<TypeEquationAndRepresentation> ::=
+  | [private] <TypeEquationOrConstrDecl>
+  | [private] <RecordOrObjectDecl>
+  | [private] <TypeRepresentation>
+  | [private] <TypeExpression> [= <TypeRepresentation>]
+
+<TypeEquationOrConstrDecl> ::=
+  | <ValuePath> <TypeConstructorArgs> [as '<Lident>]
+  | <Uident> <ConstrDeclArgs>
+
+<TypeRepresentation> ::=
+  | [private] [|] <TypeConstructorDeclarations>
+  | [private] <RecordDeclaration>
+  | ..
+
+<TypeConstructorDeclarations> ::=
+  | ['|'] <TypeConstructorDeclaration> {'|'<TypeConstructorDeclaration>}
+
+<TypeConstructorDeclaration> ::=
+  | <Uident> <ConstrDeclArgs>
+  | <Attribute> <TypeConstructorDeclaration>
+
+<RecordDeclaration> ::=
+  | '{' <FieldDeclaration> '}'
+  | '{' <FieldDeclaration> {,<FieldDeclaration>} '}'
+
+<FieldDeclaration> ::=
+  | [mutable] <Lident> [?][:<PolyTypeExpression]
+  | <Attribute> <FieldDeclaration>
+
+TODO : Maybe wrong
+<RecordOrObjectDecl> ::=
+  | '{'[(.|..)] '}'[as '<Lident>]
+  | '{'[(.|..)] <StringFieldDeclaration> {<StringFieldDeclaration>}'}' [as '<Lident>]
+  | '{'...'}'
+  | '{'{<Attribute>}'}'
+
+<PackageConstraint> ::=
+  | type <ValuePath> = <TypeExpression>
+
+<TypeExtension> ::=
+  | type [(rec|nonrec)] <ValuePath> <TypeParams> += [private] ['|'<ConstrDefinition>] {'|'<ConstrDefinition>}
+
+<ModuleSpecification> ::=
+  | module <ModuleDeclarationOrAlias>
+  | module <RecModuleSpec>
+  | module <ModuleTypeDeclaration>
+
+<ModuleDeclarationOrAlias> ::=
+  | <Uident> : <ModuleType>
+  | <Uident> = <ModulePath>
+
+<RecModuleSpec> ::=
+  | rec <Uident> : <ModuleType>  {and <Uident> : <ModuleType>}
+
+<ModuleTypeDeclaration> ::=
+  | type <Ident> [= <ModuleType>]
+
+<Expression>
+  | <OperandExpression> { <BinOperator> <OperandExpression> }
+  | <OperandExpression> ? <OperandExpression> : <OperandExpression>
+
+<OperandExpression> ::=
+  | assert <UnaryExpression>
+  | lazy <UnaryExpression>
+  | <TryExpression>
+  | <IfOrIfLetExpression>
+  | <ForExpression>
+  | <WhileExpression>
+  | <SwitchExpression>
+  | <Es6ArrowExpression>
+  | <UnaryExpression>
+  | <Attribute> <OperandExpression>
+
+<UnaryExpression> ::=
+  | <AtomicExpression> <PrimaryExpression>
+  | -<UnaryExpression>
+  | -.<UnaryExpression>
+  | +<UnaryExpression>
+  | +.<UnaryExpression>
+  | !<UnaryExpression>
+
+<TryExpression> ::=
+  | try <Expression> catch '{'<PatternMatching>'}'
+
+TODO : Currently, IfLetExpression is not supported.
+<IfOrIfLetExpression> ::=
+  | if <IfExpr>
+
+<IfExpr> ::=
+  | <IfCondition> <ThenBranch> [else <IfOrIfLetExpression>]
+  | <IfCondition> <ThenBranch> [else <ElseBranch>]
+
+<IfCondition> ::=
+  | <Expr>
+
+<ThenBranch> ::=
+  | '{' <ExprBlock>'}'
+
+<ElseBranch> ::=
+  | '{' <ExprBlock>'}'
+
+<ForExpression> ::=
+  | for <Pattern> <ForRest>
+  | for '('')' <ForRest>
+  | for '('<Pattern>[,<TuplePattern>][as '<Lident>] <ForRest>')'
+
+<ForRest> ::=
+  | in <Expression> (to|downto) <Expression> '{'<ExprBlock>'}'
+
+<WhileExpression> ::=
+  | while <Expression> '{'<ExprBlock>'}'
+
+<SwitchExpression> ::=
+  | switch <Expression> '{'<PatternMatching>'}'
+
+<Es6ArrowExpression> ::=
+  | <Parameters> [:<TypExpr>] => <Expression>
+
+<PatternMatching> ::=
+  | <PatternMatchCase> {<PatternMatchCase>}
+
+<PatternMatchCase> ::=
+  | '|' <Pattern> (when|if) <Expression> => <ExprBlock>
+
+TODO : Maybe wrong
+<ExprBlock> ::=
+  | <ExprBlockItem>[<Separator>[<ExprBlockItem>]]
+  | <ExprBlock> [:> <TypeExpression>]
+
+TODO : Maybe wrong
+<ExprBlockItem> ::=
+  | <Expression>
+  | module <Uident>
+  | module <FirstClassModuleExpression><PrimaryExpression>{ <BinOperator> <OperandExpression>}{? <OperandExpression> : <OperandExpression>}
+  | <ExceptionDefinition>
+  | <OpenDescription>
+  | let [rec] <LetBinding> {and <LetBinding>}
+
+<BinOperator> ::=
+  | #=
+  | :=
+  | ||
+  | &&
+  | =
+  | ==
+  | ===
+  | <
+  | >
+  | !=
+  | !=
+  | !==
+  | <=
+  | >=
+  | |>
+  | +
+  | +.
+  | -.
+  | -.
+  | ++
+  | *
+  | *.
+  | /
+  | /.
+  | **
+  | ->
+  | .
+
+<PrimaryExpression> ::=
+  | (* Empty *)
+  | . <ValuePath> [= <Expression>]
+  | <BracketAccess>
+  | <CallExpression>
+  | <TemplateExpression>
+  | <PrimaryExpression> <PrimaryExpression>
+
+<AtomicExpression> ::=
+  | true
+  | false
+  | <Constant>
+  | <TemplateExpression>
+  | <ValueOrConstructor>
+  | <PolyVariantExpression>
+  | '('')'
+  | '('<ConstrainedOrCoercedExpression> [,<TupleExpression>]')'
+  | list <ListExpression>
+  | module <FirstClassModuleExpression>
+  | <ArrayExpression>
+  | <BracedOrRecordExpression>
+  | <JsX>
+  | <Extension>
+
+<Constant> ::=
+  | <IntegerLiteral>
+  | <FloatLiteral>
+  | <StringLiteral>
+  | <Codepoint>
+
+<BracketAccess> ::=
+  | '['<StringLiteral>']'[= <Expression>]
+  | '['<ConstrainedOrCoercedExpression>']'[= <Expression>]
+
+<CallExpression> ::=
+  | '('')'
+  | '('<Argument>{,<Argument>}')'
+
+TODO : Scanner.scanTemplateLiteralToken
+<TemplateExpression> ::= ???
+
+<External> ::=
+  | external <Lident> : <TypeExpression> = <StringLiteral>
+
+<ExceptionDefinition> ::=
+  | exception <ConstrDefinition>
+
+<ModuleOrModuleTypeImplOrPackExpression> ::=
+  | module type <ModuleTypeImpl>
+  | module <FirstClassModuleExpression>
+  | module [rec] <Uident> [:<ModuleType>] = <ModuleExpression>
+
+<ModuleTypeImpl> ::=
+  | <Ident> = <ModuleType>
+
+<FirstClassModuleExpression> ::=
+  | '('<ModuleExpr> : [{<Attribute>} <PackageType>]')'
+
+<ArrayExpression> ::=
+  | '['']'
+  | '['<Expression> : <TypeExpression> {,<Expression> : <TypeExpression>}']'
+
+TODO : Missing parts
+<BracedOrRecordExpression> ::=
+  | '{'... <ConstrainedOrCoercedExpression>'}'
+  | '{'<StringLiteral> : <Expression> {, <StringLiteral> : <Expression>}'}'
+  | '{'? <RecordExpression>'}'
+
+TODO
+<ConstrainedOrCoercedExpression> ::= ???
+
+TODO
+<RecordExpression> ::= ???
+
+TODO
+<JsX> ::= ???
+
+<Attribute> ::=
+  | @ <AttributeId>
+  | @ <AttributeId> '('<Payload>')'
+
+<StandaloneAttribute> ::=
+  | @@ <AttributeId>
+  | @@ <AttributeId> '('<Payload>')'
+
+<Extension> ::=
+  | % <AttributeId>
+  | % <AttributeId> '('<Payload>')'
+
+<ExtensionModuleLevel> ::=
+  | %% <AttributeId>
+  | %% <AttributeId> '('<Payload>')'
+
+<AttributeId> ::=
+  | <Ident>
+  | <AttributeId>.<AttributeId>
+
+<Payload> ::=
+  | ['(':<Specifications>')']
+  | ['('? <Pattern> [(when|if) <Expression>]')']
+  | ['('<Implementations>')']
+
+TODO : Revise "alias" and "or"
+<Pattern> ::=
+  | true
+  | false
+  | <Constant>[ .. <Constant>]
+  | <TemplateConstant>
+  | '('')'
+  | '('<ConstrainedPattern> {,<TuplePattern>}')'
+  | <ArrayPattern>
+  | <RecordPattern>
+  | _
+  | <Lident> [<TemplateConstant>]
+  | <ModulePath> [<ConstructorPatternArgs>]
+  | <TagName>
+  | #...<ValuePath>
+  | <HashIdent>
+  | exception <Pattern>
+  | lazy <Pattern>
+  | list <ListPattern>
+  | module <ModulePattern>
+  | <Extension>
+  | <Attribute> <Pattern>
+  | <Pattern> [as '<Lident>]
+  | <Pattern> ['|'<Pattern>]
+
+TODO : Fill it
+<TemplateConstant> ::= ???
+
+<ConstrainedPattern> ::=
+  | <Pattern> [: <TypExpr>]
+
+<TuplePattern> ::=
+  | <ConstrainedPattern>{,<ConstrainedPattern>}
+
+<ArrayPattern> ::=
+  | '['']'
+  | '['<ConstrainedPattern>{,<ConstrainedPattern>}']'
+
+<RecordPattern> ::=
+  | '{''}'
+  | '{'<RecordPatternRow>{,<RecordPatternRow>}'}'
+
+<RecordPatternRow> ::=
+  | ... <RecordPatternRowField>
+  | [?]<Ident> <RecordPatternRowField>
+  | _
+
+<RecordPatternRowField> ::=
+  | <ValuePath> [:[?]<Pattern>]
+
+<ConstructorPatternArgs> ::=
+  | '('')'
+  | '('<ConstrainedPattern>{,<ConstrainedPattern>}')'
+
+<ListPattern> ::=
+  | '{'[...] <ConstrainedPattern> {,<ConstrainedPattern>}'}'
+
+<ModulePattern> ::=
+  | '('[<Uident>[:{<Attribute>} <PackageType>]]')'
