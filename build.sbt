@@ -27,6 +27,8 @@ ThisBuild / assemblyPrependShellScript :=
 val AkkaVersion = "2.6.19"
 val AkkaHttpVersion = "10.2.8"
 
+//val esmetaPublishLocal = taskKey[Unit]("publish esmeta locally.")
+
 // project root
 lazy val res = project
   .in(file("."))
@@ -38,6 +40,7 @@ lazy val res = project
       "io.circe" %% "circe-core" % "0.14.1",
       "io.circe" %% "circe-generic" % "0.14.1",
       "io.circe" %% "circe-parser" % "0.14.1",
+      "esmeta" %% "esmeta" % "0.1.0",
       "org.scalatest" %% "scalatest" % "3.2.11" % Test,
       "org.apache.commons" % "commons-text" % "1.9",
       "org.jsoup" % "jsoup" % "1.14.3",
@@ -60,7 +63,7 @@ lazy val res = project
 
     // set the main class for 'sbt run'
     Compile / mainClass := Some("res.Res"),
-    Compile / unmanagedSourceDirectories += baseDirectory.value / "esmeta" / "src" / "main" / "scala",
+    //Compile / unmanagedSourceDirectories += baseDirectory.value / "esmeta" / "src" / "main" / "scala",
 
     // test setting
     Test / testOptions += Tests
@@ -70,6 +73,8 @@ lazy val res = project
     // assembly setting
     assembly / test := {},
     assembly / assemblyOutputPath := file("bin/res"),
+
+    //esmetaPublishLocal := (root / publishLocal).value,
   )
   .dependsOn(root)
 
