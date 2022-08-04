@@ -62,6 +62,25 @@ Float[Suffix] ::
   FloatLiteral
   [+Suffix] FloatLiteral suffix
 
+// This is from JavaScript String
+String ::
+  `"` StringCharacters? `"`
+
+StringCharacters ::
+  StringCharacter StringCharacters?
+
+StringCharacter ::
+  SourceCharacter but not `"` `\` LineTerminator
+
+SourceCharacter ::
+  > any Unicode code point
+
+LineTerminator ::
+  <LF>
+  <CR>
+  <LS>
+  <PS>
+
 IntegerLiteral ::
   NonHexIntegerLiteral
   HexIntegerLiteral
@@ -137,37 +156,134 @@ Specification :
   ExtensionModuleLevel
   Attribute Specification
 
+NonRecFlag:
+  `nonrec`
+
 TypeDefinition :
-  [empty]
+  `type` `rec` TypeDefs
+  `type` NonRecFlag? TypeDefs
+
+TypeDefs :
+  TypeDef
+  TypeDef TypeDefRest
+
+TypeDefRest :
+  `and` TypeDefs
+  Attribute TypeDefRest
+
+TypeDef :
+  TypeConstrName AngleBraketTypeParams? TypeInfomation?
+
+TypeInfomation :
+  `=` TypeEquationAndRepresentation[+Private]
+  TypeInfomation TypeConstraints
+
+TypeConstraints :
+  TypeConstraint
+  TypeConstraint TypeConstraints
+
+TypeEquationAndRepresentation[Private] :
+  TypeEquationOrConstrDecl
+  RecordOrObjectDecl
+  TypeRepresentation[~Private]
+  TypeExpression[+Es6Arrow, +Alias]
+  [+Private] TypeExpression[+Es6Arrow, +Alias] `=` TypeRepresentation[+Private]
+  [+Private]`private` TypeEquationAndRepresentation[~Private]
+
+TypeConstrName :
+  Lident
+
+TypeConstraint :
+  `constraint` TypeLVar `=` TypeExpression[+Es6Arrow, +Alias]
 
 //TODO
 Implementation :
   [empty]
 
+TypeAlias :
+  `as` TypeLVar
+
+TypeEquationOrConstrDecl :
+  ValuePath TypeConstructorArgs TypeAlias?
+  Uident ConstrDeclArgs TypeConstructorDeclarations
+  Uident ConstrDeclArgs `|` TypeConstructorDeclarations
+
+ConstrDeclArgs :
+  [empty]
+  CoverParenthesizedTypeExpressions
+  `(` RecordOrObjectType TypeExpressions? `)`
+  `(` RecordOrObjectType `,` TypeExpressions? `)`
+  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow]  TypeExpressions? `)`
+  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow] `,` TypeExpressions? `)`
+  `(` `{` AttributedStringFieldDeclarations `}` `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `(` `{` AttributedStringFieldDeclarations `}` `,` `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `(` `{` AttributedFieldDeclarations `}` `,` `)`
+  ConstrDeclArgs `:` TypeExpression[+Es6Arrow, +Alias]
+
+TypeConstructorDeclarations :
+  TypeConstructorDeclaration
+  TypeConstructorDeclaration `|` TypeConstructorDeclarations
+
+RecordOrObjectDecl :
+  RecordOrObjectType TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` AttributedStringFieldDeclarations `}` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` AttributedStringFieldDeclarations `}` `,` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` AttributedFieldDeclarations `}`
+
+TypeConstructorDeclaration :
+  Uident ConstrDeclArgs
+  Attribute TypeConstructorDeclaration
+
+TypeRepresentation[Private] :
+  `|` TypeConstructorDeclarations
+  `..`
+  TypeConstructorDeclarations
+  [+Private] `private` TypeRepresentation[~Private]
 
 TypeExtension :
-  [empty]
+  `type` `rec` TypeExtensionLHS `+=` ConstrDefinitions
+  `type` `rec` TypeExtensionLHS `+=` `private` ConstrDefinitions
+  `type` NonRecFlag? TypeExtensionLHS `+=` ConstrDefinitions
+  `type` NonRecFlag? TypeExtensionLHS `+=` `private` ConstrDefinitions
+
+TypeExtensionLHS :
+  ValuePath TypeParams
+
+ConstrDefinitions :
+  ConstrDefinition[+Attr]
+  `|` ConstrDefinition[+Attr]
+  ConstrDefinitions `|` ConstrDefinition[+Attr]
+
+ConstrDefinition[Attr] :
+  Uident ConstrDeclArgs
+  Uident `=` ModulePath
+  Uident `:` TypeExpression[+Es6Arrow, +Alias]
+  [+Attr] Attribute ConstrDefinition[+Attr]
 
 External :
-  [empty]
+  `external` Lident `:` TypeExpression `=` String
 
 ExceptionDefinition :
-  [empty]
+  `exception` ConstrDefinition[~Attr]
 
 OpenDescription :
-  [empty]
+  `open` ModulePath
+  `open` `!` ModulePath
 
 IncludeModuleType :
-  [empty]
+  `include` ModuleType[+Es6Arrow,+With]
 
 ModuleSpecification :
   [empty]
 
 StandaloneAttribute :
-  [empty]
+  `@@` AttributeId
+  `@@` AttributeId Payload
 
 ExtensionModuleLevel :
-  [empty]
+  `%%` AttributeId
+  `%%` AttributeId Payload
 
 Ident :
   Uident
@@ -178,23 +294,31 @@ SignLetDescription :
 
 PolyTypeExpression :
   TypeExpression[+Es6Arrow, +Alias]
-  TypeVars `.` TypeExpression[+Es6Arrow, +Alias]
-  TypeVar `=>` TypeExpression[+Es6Arrow, ~Alias]
-
-TypeVars :
-  TypeVar
-  TypeVar TypeVars
+  TypeLVars `.` TypeExpression[+Es6Arrow, +Alias]
+  TypeLVar `=>` TypeExpression[+Es6Arrow, ~Alias]
 
 TypeVar :
+  TypeLVar
+  TypeUVar
+
+TypeLVar :
   `'` Lident
+
+TypeUVar :
+  `'` Uident
+
+TypeLVars :
+  TypeLVar
+  TypeLVar TypeLVars
 
 TypeExpression[Es6Arrow, Alias] :
   [+Es6Arrow] Es6ArrowType
   AtomicTypeExpression ArrowTypeRest[?Es6Arrow]
-  [+Alias] TypeExpression[?Es6Arrow, ?Alias] `as` TypeVar
+  [+Alias] TypeExpression[?Es6Arrow, ?Alias] TypeAlias
   Attribute TypeExpression[?Es6Arrow, ?Alias]
 
 Es6ArrowType :
+  [empty]
   Es6ArrowLHS ArrowTypeRest[+Es6Arrow]
 
 Es6ArrowLHS :
@@ -206,10 +330,18 @@ CoverParenthesizedTypeParameters :
   `(` `)`
   `(` TypeParameters `)`
 
+AngleBraketTypeParams :
+  `<` `>`
+  `<` TypeParams `>`
+
 TypeParameters :
   TypeParameter
   TypeParameter `,` TypeParameters
 
+TypeParams :
+  TypeParam
+  TypeParam `,` TypeParam
+  
 TypeParameter :
   TypeExpression[+Es6Arrow, +Alias]
   `~` Lident `:` TypeExpression[+Es6Arrow, ~Alias]
@@ -217,7 +349,16 @@ TypeParameter :
   Lident TypeConstructorArgs? ArrowTypeRest[+Es6Arrow]
   `.` TypeParameter
   Attribute TypeParameter
-  
+
+Variance :
+  [empty]
+  `+`
+  `-`
+
+TypeParam :
+  Variance TypeVar
+  Variance `_`
+
 ArrowTypeRest[Es6Arrow] :
   [empty]
   [+Es6Arrow] `=>` TypeExpression[+Es6Arrow, ~Alias]
@@ -226,11 +367,16 @@ TypeConstructorArgs :
   `<` `>`
   `<` TypeExpressions `>`
 
+// TODO
 AtomicTypeExpression :
-  `'` Ident
+  TypeVar
   `_`
   CoverParenthesizedTypeExpressions
   PolymorphicVariantType
+  ValuePath TypeConstructorArgs
+  `module` `(` PackageType `)`
+  Extension
+  RecordOrObjectType
 
 CoverParenthesizedTypeExpressions :
   `(` `)`
@@ -238,7 +384,56 @@ CoverParenthesizedTypeExpressions :
 
 TypeExpressions :
   TypeExpression[+Es6Arrow, +Alias]
-  TypeExpressions `,` TypeExpression[+Es6Arrow, +Alias]
+  TypeExpression[+Es6Arrow, +Alias] `,` TypeExpressions 
+
+AttributedStringFieldDeclarations :
+  StringFieldDeclarations
+  Attribute StringFieldDeclarations
+
+StringFieldDeclarations :
+  StringFieldDeclaration
+  StringFieldDeclaration `,` StringFieldDeclarations
+
+AttributedFieldDeclarations :
+  FieldDeclarations
+  Attribute FieldDeclarations
+
+FieldDeclarations :
+  FieldDeclaration
+  FieldDeclaration `,` FieldDeclarations
+
+OptionalLabel :
+  `?`
+
+FieldDeclaration :
+  Lident OptionalLabel?
+  Lident OptionalLabel? `:` PolyTypeExpression
+  `mutable` Lident OptionalLabel?
+  `mutable` Lident OptionalLabel? `:` PolyTypeExpression
+  Attribute FieldDeclaration
+
+StringFieldDeclaration :
+  String `:` PolyTypeExpression
+  `...` TypeExpression[+Es6Arrow, +Alias]
+  Attribute StringFieldDeclaration
+
+OpenFlag :
+  `..`
+
+ClosedFlag :
+  `.`
+
+RecordOrObjectType :
+  OpenRecordOrObjectType
+  ClosedRecordOrObjectType
+
+OpenRecordOrObjectType :
+  `{` OpenFlag `}`
+  `{` OpenFlag StringFieldDeclarations `}`
+
+ClosedRecordOrObjectType :
+  `{` ClosedFlag? `}`
+  `{` ClosedFlag? StringFieldDeclarations `}`
 
 PolymorphicVariantType :
   `[` `>` TagSpec? TagSpecs? `]`
@@ -337,7 +532,7 @@ Pattern[Alias, Or] :
   `module` ModulePattern
   Extension
   Attribute Pattern[?Alias, ?Or]
-  [+Alias] Pattern[?Alias, ?Or] `as` `'`Lident
+  [+Alias] Pattern[?Alias, ?Or] TypeAlias
   [+Or] Pattern[?Alias, ?Or] `|` Pattern[?Alias, ~Or]
 
 //TODO : String, Codepoint, +-
@@ -348,6 +543,7 @@ Constant :
   Float[+Suffix]
   `+` Float[+Suffix]
   `-` Float[+Suffix]
+  String
 
 Interval :
   Constant `..` Constant
@@ -390,9 +586,67 @@ ModulePattern :
   `(` Uident `)`
   `(` Uident `:` PackageTypeWithAttr `)`
 
+ModuleType[Es6Arrow, With] :
+  [+Es6Arrow] Es6ArrowFunctor
+  AtomicModuleType
+  Attribute ModuleType[?Es6Arrow, ?With]
+
+Es6ArrowFunctor :
+  `(` FunctorArgs? `)` `=>` ModuleType
+  Attribute Es6ArrowFunctor
+
+FunctorArgs :
+  FunctorArg
+  FunctorArg FunctorArgs
+  
+FunctorArg :
+  Uident `:` ModuleType[+Es6Arrow, +With]
+  ModulePath
+  `_` `:` ModuleType[+Es6Arrow, +With]
+  `(` `)`
+  Attribute FunctorArg
+
+AtomicModuleType :
+  ModuleOrValuePath
+  `(` ModuleType[+Es6Arrow, +With] `)`
+  `{` Specifications `}`
+  `module` `type` `of` ModuleExpression
+  Extension
+
+ModuleExpression :
+  FunctorModuleExpr
+  PrimaryModExpr
+  Attribute ModuleExpression
+
+PrimaryModExpr :
+  AtomicModuleExpr ModuleApplications?
+
+ModuleApplications :
+  `(` ModuleApplication? `)`
+  `(` ModuleApplication? `)` ModuleApplications
+
+ModuleApplication :
+  ConstrainedModExpr
+  ConstrainedModExpr `,` ModuleApplication
+
+ConstrainedModExpr :
+  ModuleExpression
+  ModuleExpression `:` ModuleType[+Es6Arrow, +With]
+
 PackageTypeWithAttr :
   PackageType
   Attribute PackageType
+
+PackageType :
+  ModuleOrValuePath
+  ModuleOrValuePath `with` PackageConstraints
+
+PackageConstraints :
+  PackageConstraint
+  PackageConstraint `and` PackageConstraints
+  
+PackageConstraint :
+  `type` ValuePath `=` TypeExpression[+Es6Arrow, +Alias]
 
 Extension :
   `%` AttributeId
