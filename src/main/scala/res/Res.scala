@@ -21,9 +21,13 @@ object Res {
 
   val specsP = parser("Specifications")
   val specP = parser("Specification")
+  val implsP = parser("Implementations")
+  val moduleimP = parser("ModuleTypeImpl")
   val letP = parser("SignLetDescription")
   val polyP = parser("PolyTypeExpression")
   val typeP = parser("TypeExpression")
   val typevarP = parser("TypeVar")
   val typedefP = parser("TypeDefinition")
+  val identP = parser("Ident")
+  val AtomicP = parser("AtomicModuleType")
 }

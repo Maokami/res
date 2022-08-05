@@ -136,10 +136,12 @@ Suffix :: one of
   `g` `h` `i` `j` `k` `l` `m` `o` `p` `q` `r` `s` `t` `u` `v` `w` `x` `y` `z` `G` `H` `I` `J` `K` `L` `M` `N` `O` `P` `Q` `R` `S` `T` `U` `V` `W` `X` `Y` `Z`
 
 Specifications :
+  [empty]
   Specification
   Specification `;` Specifications 
 
 Implementations :
+  [empty]
   Implementation
   Implementation `;` Implementations
 
@@ -198,6 +200,21 @@ TypeConstraint :
 
 //TODO
 Implementation :
+  ModuleOrModuleTypeImplOrPackExpression
+  
+ModuleOrModuleTypeImplOrPackExpression :
+  `module` `type` ModuleTypeImpl
+  `module` FirstClassModuleExpression
+  `module` MaybeRecModuleBinding
+
+ModuleTypeImpl :
+  Ident `=` ModuleType[+Es6Arrow,+With]
+
+FirstClassModuleExpression :
+  [empty]
+
+//[rec] <Uident> [:<ModuleType>] = <ModuleExpression>
+MaybeRecModuleBinding :
   [empty]
 
 TypeAlias :
@@ -275,6 +292,17 @@ IncludeModuleType :
   `include` ModuleType[+Es6Arrow,+With]
 
 ModuleSpecification :
+  `module` ModuleDeclarationOrAlias
+  `module` RecModuleSpec
+  `module` ModuleTypeDeclaration
+
+ModuleDeclarationOrAlias :
+  [empty]
+
+RecModuleSpec :
+  [empty]
+
+ModuleTypeDeclaration :
   [empty]
 
 StandaloneAttribute :
@@ -618,8 +646,20 @@ ModuleExpression :
   PrimaryModExpr
   Attribute ModuleExpression
 
+FunctorModuleExpr :
+  [empty]
+
 PrimaryModExpr :
   AtomicModuleExpr ModuleApplications?
+
+AtomicModuleExpr :
+   ModulePath
+   `{` Implementations `}`
+   `(`ModuleExpression `)`
+   `(`ModuleExpression `:` ModuleType `)`
+   `unpack` `(` Expression `)`
+   `unpack` `(` Expression `:` PackageTypeWithAttr`)`
+   Extension
 
 ModuleApplications :
   `(` ModuleApplication? `)`
@@ -686,6 +726,9 @@ RecordPatternRowField :
   ValuePath 
   ValuePath `:` Pattern[+Alias, +Or]
   ValuePath `:` `?` Pattern[+Alias, +Or]
+
+Expression :
+  [empty]
 
 Expression_OrdExprContext :
   [empty]
