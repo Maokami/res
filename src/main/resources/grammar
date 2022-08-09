@@ -5,6 +5,9 @@ Letter ::
   Lletter
   Uletter
 
+Semicolon ::
+  `;`
+
 Lletter :: one of
   `a` `b` `c` `d` `e` `f` `g` `h` `i` `j` `k` `l` `m` `n` `o` `p` `q` `r` `s` `t` `u` `v` `w` `x` `y` `z`
 
@@ -137,13 +140,11 @@ Suffix :: one of
 
 Specifications :
   [empty]
-  Specification
-  Specification `;` Specifications 
+  Specification Semicolon? Specifications
 
 Implementations :
   [empty]
-  Implementation
-  Implementation `;` Implementations
+  Implementation Semicolon? Implementations
 
 Specification :
   SignLetDescription
@@ -166,8 +167,7 @@ TypeDefinition :
   `type` NonRecFlag? TypeDefs
 
 TypeDefs :
-  TypeDef
-  TypeDef TypeDefRest
+  TypeDef TypeDefRest?
 
 TypeDefRest :
   `and` TypeDefs
@@ -200,7 +200,17 @@ TypeConstraint :
 
 //TODO
 Implementation :
+  OpenDescription
+  TypeDefinition
+  TypeExtension
+  External
+  ExceptionDefinition
   ModuleOrModuleTypeImplOrPackExpression
+  StandaloneAttribute
+  ExtensionModuleLevel
+  String
+  Attribute Implementation
+
   
 ModuleOrModuleTypeImplOrPackExpression :
   `module` `type` ModuleTypeImpl
@@ -221,20 +231,20 @@ TypeAlias :
   `as` TypeLVar
 
 TypeEquationOrConstrDecl :
-  ValuePath TypeConstructorArgs TypeAlias?
+  ValuePath TypeConstructorArgs? TypeAlias?
   Uident ConstrDeclArgs TypeConstructorDeclarations
   Uident ConstrDeclArgs `|` TypeConstructorDeclarations
+
+Comma ::
+  `,`
 
 ConstrDeclArgs :
   [empty]
   CoverParenthesizedTypeExpressions
-  `(` RecordOrObjectType TypeExpressions? `)`
-  `(` RecordOrObjectType `,` TypeExpressions? `)`
-  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow]  TypeExpressions? `)`
-  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow] `,` TypeExpressions? `)`
-  `(` `{` AttributedStringFieldDeclarations `}` `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
-  `(` `{` AttributedStringFieldDeclarations `}` `,` `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
-  `(` `{` AttributedFieldDeclarations `}` `,` `)`
+  `(` RecordOrObjectType Comma? TypeExpressions? `)`
+  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow] Comma? TypeExpressions? `)`
+  `(` `{` AttributedStringFieldDeclarations `}` Comma? `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `(` `{` AttributedFieldDeclarations `}` Comma? `)`
   ConstrDeclArgs `:` TypeExpression[+Es6Arrow, +Alias]
 
 TypeConstructorDeclarations :
@@ -259,13 +269,13 @@ TypeRepresentation[Private] :
   [+Private] `private` TypeRepresentation[~Private]
 
 TypeExtension :
-  `type` `rec` TypeExtensionLHS `+=` ConstrDefinitions
   `type` `rec` TypeExtensionLHS `+=` `private` ConstrDefinitions
-  `type` NonRecFlag? TypeExtensionLHS `+=` ConstrDefinitions
+  `type` `rec` TypeExtensionLHS `+=` ConstrDefinitions
   `type` NonRecFlag? TypeExtensionLHS `+=` `private` ConstrDefinitions
+  `type` NonRecFlag? TypeExtensionLHS `+=` ConstrDefinitions
 
 TypeExtensionLHS :
-  ValuePath TypeParams
+  ValuePath AngleBraketTypeParams?
 
 ConstrDefinitions :
   ConstrDefinition[+Attr]
@@ -279,7 +289,7 @@ ConstrDefinition[Attr] :
   [+Attr] Attribute ConstrDefinition[+Attr]
 
 External :
-  `external` Lident `:` TypeExpression `=` String
+  `external` Lident `:` TypeExpression[+Es6Arrow, +Alias] `=` String
 
 ExceptionDefinition :
   `exception` ConstrDefinition[~Attr]
@@ -291,9 +301,9 @@ OpenDescription :
 IncludeModuleType :
   `include` ModuleType[+Es6Arrow,+With]
 
+  //`module` ModuleDeclarationOrAlias
+  //`module` RecModuleSpec
 ModuleSpecification :
-  `module` ModuleDeclarationOrAlias
-  `module` RecModuleSpec
   `module` ModuleTypeDeclaration
 
 ModuleDeclarationOrAlias :
@@ -303,7 +313,8 @@ RecModuleSpec :
   [empty]
 
 ModuleTypeDeclaration :
-  [empty]
+  `type` Ident
+  `type` Ident `=` ModuleType[+Es6Arrow, +With]
 
 StandaloneAttribute :
   `@@` AttributeId
@@ -401,7 +412,7 @@ AtomicTypeExpression :
   `_`
   CoverParenthesizedTypeExpressions
   PolymorphicVariantType
-  ValuePath TypeConstructorArgs
+  ValuePath TypeConstructorArgs?
   `module` `(` PackageType `)`
   Extension
   RecordOrObjectType
@@ -411,16 +422,16 @@ CoverParenthesizedTypeExpressions :
   `(` TypeExpressions `)`
 
 TypeExpressions :
-  TypeExpression[+Es6Arrow, +Alias]
   TypeExpression[+Es6Arrow, +Alias] `,` TypeExpressions 
+  TypeExpression[+Es6Arrow, +Alias]
 
 AttributedStringFieldDeclarations :
   StringFieldDeclarations
   Attribute StringFieldDeclarations
 
 StringFieldDeclarations :
-  StringFieldDeclaration
   StringFieldDeclaration `,` StringFieldDeclarations
+  StringFieldDeclaration
 
 AttributedFieldDeclarations :
   FieldDeclarations
@@ -616,11 +627,15 @@ ModulePattern :
 
 ModuleType[Es6Arrow, With] :
   [+Es6Arrow] Es6ArrowFunctor
-  AtomicModuleType
+  AtomicModuleType ArrowTypeRest[?Es6Arrow]
   Attribute ModuleType[?Es6Arrow, ?With]
 
+ArrowTypeRest[Es6Arrow] :
+  [empty]
+  [+Es6Arrow] `=>` ModuleType[+Es6Arrow, ~With]
+
 Es6ArrowFunctor :
-  `(` FunctorArgs? `)` `=>` ModuleType
+  `(` FunctorArgs? `)` `=>` ModuleType[+Es6Arrow, +With]
   Attribute Es6ArrowFunctor
 
 FunctorArgs :
@@ -707,8 +722,8 @@ ModuleName :
   Uident
 
 ModulePath :
-  ModuleName
   ModuleName `.` ModulePath
+  ModuleName
 
 ValueName :
   Lident
@@ -719,13 +734,13 @@ ValuePath :
 
 ModuleOrValuePath :
   ValueName
-  ModulePath
   ModulePath `.` ValueName
+  ModulePath
 
 RecordPatternRowField :
-  ValuePath 
-  ValuePath `:` Pattern[+Alias, +Or]
   ValuePath `:` `?` Pattern[+Alias, +Or]
+  ValuePath `:` Pattern[+Alias, +Or]
+  ValuePath 
 
 Expression :
   [empty]

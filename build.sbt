@@ -74,6 +74,9 @@ lazy val res = project
     assembly / test := {},
     assembly / assemblyOutputPath := file("bin/res"),
 
+    /** tasks for tests */
+    rsParseTest := (Test / testOnly).toTask(" *.rs.Parse*Test").value,
+
     //esmetaPublishLocal := (root / publishLocal).value,
   )
   .dependsOn(root)
@@ -81,6 +84,8 @@ lazy val res = project
 // esmeta
 lazy val root = project
   .in(file("esmeta"))
+
+lazy val rsParseTest = taskKey[Unit]("Launch parse tests for rs (small)")
 
 // format all files
 lazy val format = taskKey[Unit]("format all files")
