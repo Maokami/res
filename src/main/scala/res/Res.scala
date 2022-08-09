@@ -20,20 +20,22 @@ object Res {
 
   lazy val scriptP = parser("Script")
   def specsP = parser("Specifications")
-  val specP = parser("Specification")
+  def specP = parser("Specification")
   def implsP = parser("Implementations")
+  def implP = parser("Implementation")
+  def moduleimP = parser("ModuleTypeImpl")
+  def letP = parser("SignLetDescription")
+  def polyP = parser("PolyTypeExpression")
+  def typeP = parser("TypeExpression", List(true, true))
+  def typevarP = parser("TypeVar")
+  def typedefP = parser("TypeDefinition")
+  def identP = parser("Ident")
+  def atomicP = parser("AtomicTypeExpression")
+  def modulespecP = parser("ModuleSpecification")
+  def fielddeclP = parser("AttributedFieldDeclarations")
+
   def testResP(filename: String) =
     implsP.fromFile(s"$RS_PARSE_TEST_DIR/$filename")
   def testResiP(filename: String) =
     specsP.fromFile(s"$RS_PARSE_TEST_DIR/$filename")
-  val moduleimP = parser("ModuleTypeImpl")
-  val letP = parser("SignLetDescription")
-  val polyP = parser("PolyTypeExpression")
-  val typeP = parser("TypeExpression")
-  val typevarP = parser("TypeVar")
-  val typedefP = parser("TypeDefinition")
-  val identP = parser("Ident")
-  val atomicP = parser("AtomicModuleType")
-  val modulespecP = parser("ModuleSpecification")
-  val fielddeclP = parser("AttributedFieldDeclarations")
 }

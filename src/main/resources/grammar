@@ -140,11 +140,13 @@ Suffix :: one of
 
 Specifications :
   [empty]
-  Specification Semicolon? Specifications
+  Specification Specifications
+  Specification Semicolon Specifications
 
 Implementations :
   [empty]
-  Implementation Semicolon? Implementations
+  Implementation Implementations
+  Implementation Semicolon Implementations
 
 Specification :
   SignLetDescription
@@ -174,11 +176,11 @@ TypeDefRest :
   Attribute TypeDefRest
 
 TypeDef :
-  TypeConstrName AngleBraketTypeParams? TypeInfomation?
+  TypeConstrName AngleBraketTypeParams? TypeInformation?
 
-TypeInfomation :
+TypeInformation :
   `=` TypeEquationAndRepresentation[+Private]
-  TypeInfomation TypeConstraints
+  TypeInformation TypeConstraints
 
 TypeConstraints :
   TypeConstraint
@@ -201,6 +203,7 @@ TypeConstraint :
 //TODO
 Implementation :
   OpenDescription
+  LetBindings
   TypeDefinition
   TypeExtension
   External
@@ -208,20 +211,141 @@ Implementation :
   ModuleOrModuleTypeImplOrPackExpression
   StandaloneAttribute
   ExtensionModuleLevel
-  String
+  Expr[~TTB, ~When]
   Attribute Implementation
 
+Expr[TTB, When] :
+  OperandExpr[?TTB, ?When]
+  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When]
+  OperandExpr[?TTB, ?When] TernaryExpr
+  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When] TernaryExpr
+
+OperandExpr[TTB, When] :
+  `assert` UnaryExpr
+  `lazy` UnaryExpr
+  TryExpr
+  UnaryExpr
+  //IfOrIfLetExpr
+  //ForExpr
+  //WhileExpr
+  //SwitchExpr
+  //[+TTB] AsyncArrowExpr
+  //AwaitExpr
+  //[~When] Es6ArrowExpr
+  //Attribute OperandExpr[?TTB, ?When]
+
+UnaryExpr :
+  AtomicExpr PrimaryExpr[~NoCall]?
+  `-` UnaryExpr
+  `-.` UnaryExpr
+  `+` UnaryExpr
+  `+.` UnaryExpr
+  `!` UnaryExpr
+
+InfixOperator :: one of
+  `#=`  `:=`  `||`  `&&`  `=`  `==`  `===`  `<`  `>`  `!=`  `!=`  `!==`  `<=`  `>=`  `|>`  `+`  `+.`  `-.`  `-.`  `++`  `*`  `*.`  `/`  `/.`  `**`  `->`  `.`
+
+BinaryExpr[TTB, When] :
+  InfixOperator OperandExpr[?TTB, ?When]
+
+TernaryExpr :
+  `?` Expr[+TTB, ~When] `:` Expr[~TTB, ~When]
+
+AtomicExpr :
+  `true`
+  `false`
+  Constant
+  `(``)`
+  `module` FirstClassModuleExpr
+  Extension
+  ValueOrConstructor
+  //<TemplateExpression>
+  //<PolyVariantExpression>
+  //`(`<ConstrainedOrCoercedExpression> [,<TupleExpression>]`)`
+  //`list` ListExpression
+  //<ArrayExpression>
+  //<BracedOrRecordExpression>
+  //<JsX>
+
+//TODO : Maybe wrong
+ValueOrConstructor :
+  ModuleOrValuePath
+  ModuleOrValuePath ConstructorArgs
+
+ConstructorArgs :
+  `(` `)`
+  `(` ConstrainedExprs `)`
+
+ConstrainedExprs :
+  ConstrainedExpr
+  ConstrainedExpr `,` ConstrainedExprs
+
+ConstrainedExpr :
+  Expr[~TTB, ~When]
+  Expr[~TTB, ~When] TypeExpression[+Es6Arrow, +Alias]
+
+PrimaryExpr[NoCall] :
+  `.` ValuePath
+  [~NoCall]`.` ValuePath `=` Expr[~TTB, ~When]
+  //<BracketAccess>
+  //<CallExpression>
+  //<TemplateExpression>
+  //PrimaryExpr PrimaryExpr
+
+TryExpr :
+  `try` Expression[~TTB, +When] `catch` `{` PatternMatching `}`
+
+PatternMatching :
+  PatternMatchCase
+  PatternMatchCase PatternMatching
+
+PatternMatchCase :
+  `|` Pattern PatternGuard `=>` ExprBlock
+
+PatternGuard :
+  `when` Expr[~TTB, +When]
+  `if` Expr[~TTB, +When]
+
+ExprBlock :
+  ExprBlockItem Semicolon? ExprBlockItem?
+  ExprBlockItem Semicolon? ExprBlockItem? `:>` TypeExpression[+Es6Arrow, +Alias]
+
+ExprBlockItem :
+  `module` Uident ModuleBindingBody Semicolon? ExprBlock
+  `module` FirstClassModuleExpr PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr?
+  ExceptionDefinition Semicolon? ExprBlock
+  OpenDescription Semicolon? ExprBlock
+  LetBindings Semicolon? ExprBlock
+  Expr[~TTB, ~When] Semicolon? ExprBlock
+
+LetBindings:
+  `let` LetBindingBody
+  `let` `rec` LetBindingBody
+  LetBindings `and` LetBindingBody
+  LetBindings `and` `let` LetBindingBody
+
+LetBindingBody:
+  Pattern[+Alias, +Or] `:` `type` LidentList? `.` TypeExpression[+Es6Arrow, +Alias] `=` Expr[~TTB, ~When]
+  Pattern[+Alias, +Or] `:` PolyTypeExpression `=` Expr[~TTB, ~When]
+  Pattern[+Alias, +Or] `:` PolyTypeExpression `=` Expr[~TTB, ~When] `:>` TypeExpression[+Es6Arrow, +Alias]
+  Pattern[+Alias, +Or] `=` Expr[~TTB, ~When]
+  Pattern[+Alias, +Or] `=` Expr[~TTB, ~When] `:>` TypeExpression[+Es6Arrow, +Alias]
+
+LidentList:
+  Lident
+  Lident LidentList
   
 ModuleOrModuleTypeImplOrPackExpression :
   `module` `type` ModuleTypeImpl
-  `module` FirstClassModuleExpression
+  `module` FirstClassModuleExpr
   `module` MaybeRecModuleBinding
 
 ModuleTypeImpl :
   Ident `=` ModuleType[+Es6Arrow,+With]
 
-FirstClassModuleExpression :
-  [empty]
+FirstClassModuleExpr :
+  `(` ModuleExpression `)`
+  `(` ModuleExpression `:` PackageTypeWithAttr `)`
 
 //[rec] <Uident> [:<ModuleType>] = <ModuleExpression>
 MaybeRecModuleBinding :
@@ -299,7 +423,7 @@ OpenDescription :
   `open` `!` ModulePath
 
 IncludeModuleType :
-  `include` ModuleType[+Es6Arrow,+With]
+  `include` ModuleType[+Es6Arrow, +With]
 
   //`module` ModuleDeclarationOrAlias
   //`module` RecModuleSpec
@@ -352,7 +476,8 @@ TypeLVars :
 
 TypeExpression[Es6Arrow, Alias] :
   [+Es6Arrow] Es6ArrowType
-  AtomicTypeExpression ArrowTypeRest[?Es6Arrow]
+  [+Es6Arrow] AtomicTypeExpression `=>` TypeExpression[+Es6Arrow, ~Alias]
+  AtomicTypeExpression
   [+Alias] TypeExpression[?Es6Arrow, ?Alias] TypeAlias
   Attribute TypeExpression[?Es6Arrow, ?Alias]
 
@@ -398,6 +523,7 @@ TypeParam :
   Variance TypeVar
   Variance `_`
 
+//TODO: Replace this
 ArrowTypeRest[Es6Arrow] :
   [empty]
   [+Es6Arrow] `=>` TypeExpression[+Es6Arrow, ~Alias]
@@ -560,7 +686,8 @@ Pattern[Alias, Or] :
   ArrayPattern
   RecordPattern
   `_`
-  Lident TemplateConstant?
+  Lident
+  Lident TemplateConstant
   ModulePath ConstructorPatternArgs?
   TagName
   `#...` ValuePath
@@ -626,17 +753,28 @@ ModulePattern :
   `(` Uident `:` PackageTypeWithAttr `)`
 
 ModuleType[Es6Arrow, With] :
-  [+Es6Arrow] Es6ArrowFunctor
+  [+Es6Arrow] FunctorModuleType
   AtomicModuleType ArrowTypeRest[?Es6Arrow]
   Attribute ModuleType[?Es6Arrow, ?With]
+  [+With] ModuleType WithConstraints
+
+WithConstraints :
+  `with` WithConstraint
+  WithConstraints `and` WithConstraint
+
+WithConstraint :
+  `module` ModulePath `:=` ModulePath
+  `module` ModulePath `=` ModulePath
+  `type` ValuePath AngleBraketTypeParams? `:=` TypeExpression[+Es6Arrow, +Alias]
+  `type` ValuePath AngleBraketTypeParams? `=` TypeExpression[+Es6Arrow, +Alias] TypeConstraints?
 
 ArrowTypeRest[Es6Arrow] :
   [empty]
   [+Es6Arrow] `=>` ModuleType[+Es6Arrow, ~With]
 
-Es6ArrowFunctor :
+FunctorModuleType :
   `(` FunctorArgs? `)` `=>` ModuleType[+Es6Arrow, +With]
-  Attribute Es6ArrowFunctor
+  Attribute FunctorModuleType
 
 FunctorArgs :
   FunctorArg
