@@ -1,5 +1,6 @@
+// handle `list`
 Keyword :: one of
-  `and` `as` `assert` `await` `constraint` `else` `exception` `external` `false` `for` `if` `in` `include` `lazy` `let` `list` `module` `mutable` `of` `open` `private` `rec` `switch` `true` `try` `type` `when` `while`
+  `and` `as` `assert` `await` `constraint` `else` `exception` `external` `false` `for` `if` `in` `include` `lazy` `let` `list{` `module` `mutable` `of` `open` `private` `rec` `switch` `true` `try` `type` `when` `while`
 
 Letter ::
   Lletter
