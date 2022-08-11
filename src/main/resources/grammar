@@ -161,7 +161,7 @@ Specification :
   ExtensionModuleLevel
   Attribute Specification
 
-NonRecFlag:
+NonRecFlag ::
   `nonrec`
 
 TypeDefinition :
@@ -215,17 +215,14 @@ Implementation :
   Attribute Implementation
 
 Expr[TTB, When] :
-  OperandExpr[?TTB, ?When]
-  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When]
-  OperandExpr[?TTB, ?When] TernaryExpr
-  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When] TernaryExpr
+  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When]? TernaryExpr?
 
 OperandExpr[TTB, When] :
   `assert` UnaryExpr
   `lazy` UnaryExpr
   TryExpr
   UnaryExpr
-  //IfOrIfLetExpr
+  IfOrIfLetExpr
   //ForExpr
   //WhileExpr
   //SwitchExpr
@@ -259,30 +256,57 @@ AtomicExpr :
   `module` FirstClassModuleExpr
   Extension
   ValueOrConstructor
+  `(` ConstrainedOrCoercedExpr `)`
+  `(` ConstrainedOrCoercedExpr Comma TupleExpr `)`
   //<TemplateExpression>
   //<PolyVariantExpression>
-  //`(`<ConstrainedOrCoercedExpression> [,<TupleExpression>]`)`
   //`list` ListExpression
   //<ArrayExpression>
   //<BracedOrRecordExpression>
   //<JsX>
 
-//TODO : Maybe wrong
+IfOrIfLetExpr :
+  `if` IfExpr
+
+IfExpr :
+  IfCondition ThenBranch 
+  IfCondition ThenBranch `else` IfOrIfLetExpr
+  IfCondition ThenBranch `else` ElseBranch
+
+IfCondition :
+  Expr[~TTB, ~When]
+
+ThenBranch :
+  `{` ExprBlock `}`
+
+ElseBranch :
+  `{` ExprBlock `}`
+
+ConstrainedOrCoercedExpr :
+  ConstrainedExpr
+  ConstrainedExpr `:>` CoercedExpr
+
+TupleExpr :
+  ConstrainedExprs
+
+CoercedExpr :
+  TypeExpression[+Es6Arrow, +Alias]
+
 ValueOrConstructor :
   ModuleOrValuePath
-  ModuleOrValuePath ConstructorArgs
+  ModuleOrValuePath [no LineTerminator here] ConstructorArgs
 
 ConstructorArgs :
   `(` `)`
   `(` ConstrainedExprs `)`
 
 ConstrainedExprs :
-  ConstrainedExpr
-  ConstrainedExpr `,` ConstrainedExprs
+  ConstrainedExpr Comma?
+  ConstrainedExpr Comma ConstrainedExprs
 
 ConstrainedExpr :
   Expr[~TTB, ~When]
-  Expr[~TTB, ~When] TypeExpression[+Es6Arrow, +Alias]
+  Expr[~TTB, ~When] `:` TypeExpression[+Es6Arrow, +Alias]
 
 PrimaryExpr[NoCall] :
   `.` ValuePath
@@ -307,16 +331,20 @@ PatternGuard :
   `if` Expr[~TTB, +When]
 
 ExprBlock :
-  ExprBlockItem Semicolon? ExprBlockItem?
-  ExprBlockItem Semicolon? ExprBlockItem? `:>` TypeExpression[+Es6Arrow, +Alias]
+  Semicolon? ExprBlockItem?
+  Semicolon? ExprBlockItem? `:>` CoercedExpr
 
 ExprBlockItem :
-  `module` Uident ModuleBindingBody Semicolon? ExprBlock
+  `module` Uident ModuleBindingBody Semicolon? ExprBlockItem? ExprBlock
   `module` FirstClassModuleExpr PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr?
-  ExceptionDefinition Semicolon? ExprBlock
-  OpenDescription Semicolon? ExprBlock
-  LetBindings Semicolon? ExprBlock
-  Expr[~TTB, ~When] Semicolon? ExprBlock
+  ExceptionDefinition Semicolon? ExprBlockItem? ExprBlock
+  OpenDescription Semicolon? ExprBlockItem? ExprBlock
+  LetBindings Semicolon? ExprBlockItem? ExprBlock
+  Expr[~TTB, ~When] Semicolon? ExprBlockItem? ExprBlock
+
+ModuleBindingBody :
+  `=` ModuleExpr
+  `:` ModuleType[+Es6Arrow, +With] `=` ModuleExpr
 
 LetBindings:
   `let` LetBindingBody
@@ -341,13 +369,13 @@ ModuleOrModuleTypeImplOrPackExpression :
   `module` MaybeRecModuleBinding
 
 ModuleTypeImpl :
-  Ident `=` ModuleType[+Es6Arrow,+With]
+  Ident `=` ModuleType[+Es6Arrow, +With]
 
 FirstClassModuleExpr :
-  `(` ModuleExpression `)`
-  `(` ModuleExpression `:` PackageTypeWithAttr `)`
+  `(` ModuleExpr `)`
+  `(` ModuleExpr `:` PackageTypeWithAttr `)`
 
-//[rec] <Uident> [:<ModuleType>] = <ModuleExpression>
+//[rec] <Uident> [:<ModuleType>] = <ModuleExpr>
 MaybeRecModuleBinding :
   [empty]
 
@@ -366,7 +394,7 @@ ConstrDeclArgs :
   [empty]
   CoverParenthesizedTypeExpressions
   `(` RecordOrObjectType Comma? TypeExpressions? `)`
-  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow] Comma? TypeExpressions? `)`
+  `(` `{` `...` TypeExpression[+Es6Arrow, +Alias] Comma StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow] Comma? TypeExpressions? `)`
   `(` `{` AttributedStringFieldDeclarations `}` Comma? `)` TypeAlias? ArrowTypeRest[+Es6Arrow]
   `(` `{` AttributedFieldDeclarations `}` Comma? `)`
   ConstrDeclArgs `:` TypeExpression[+Es6Arrow, +Alias]
@@ -377,9 +405,8 @@ TypeConstructorDeclarations :
 
 RecordOrObjectDecl :
   RecordOrObjectType TypeAlias? ArrowTypeRest[+Es6Arrow]
-  `{` `...` TypeExpression[+Es6Arrow, +Alias] `,` StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow]
-  `{` AttributedStringFieldDeclarations `}` TypeAlias? ArrowTypeRest[+Es6Arrow]
-  `{` AttributedStringFieldDeclarations `}` `,` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` `...` TypeExpression[+Es6Arrow, +Alias] Comma StringFieldDeclarations? `}` TypeAlias? ArrowTypeRest[+Es6Arrow]
+  `{` AttributedStringFieldDeclarations `}` Comma? TypeAlias? ArrowTypeRest[+Es6Arrow]
   `{` AttributedFieldDeclarations `}`
 
 TypeConstructorDeclaration :
@@ -499,12 +526,12 @@ AngleBraketTypeParams :
   `<` TypeParams `>`
 
 TypeParameters :
-  TypeParameter
-  TypeParameter `,` TypeParameters
+  TypeParameter Comma?
+  TypeParameter Comma TypeParameters
 
 TypeParams :
-  TypeParam
-  TypeParam `,` TypeParam
+  TypeParam Comma?
+  TypeParam Comma TypeParams
   
 TypeParameter :
   TypeExpression[+Es6Arrow, +Alias]
@@ -548,16 +575,16 @@ CoverParenthesizedTypeExpressions :
   `(` TypeExpressions `)`
 
 TypeExpressions :
-  TypeExpression[+Es6Arrow, +Alias] `,` TypeExpressions 
   TypeExpression[+Es6Arrow, +Alias]
+  TypeExpression[+Es6Arrow, +Alias] Comma TypeExpressions 
 
 AttributedStringFieldDeclarations :
   StringFieldDeclarations
   Attribute StringFieldDeclarations
 
 StringFieldDeclarations :
-  StringFieldDeclaration `,` StringFieldDeclarations
   StringFieldDeclaration
+  StringFieldDeclaration Comma StringFieldDeclarations
 
 AttributedFieldDeclarations :
   FieldDeclarations
@@ -565,7 +592,7 @@ AttributedFieldDeclarations :
 
 FieldDeclarations :
   FieldDeclaration
-  FieldDeclaration `,` FieldDeclarations
+  FieldDeclaration Comma FieldDeclarations
 
 OptionalLabel :
   `?`
@@ -720,11 +747,11 @@ TemplateConstant :
 
 ConstrainedPatterns :
   ConstrainedPattern
-  ConstrainedPattern `,` ConstrainedPatterns
+  ConstrainedPattern Comma ConstrainedPatterns
 
 RecordPatternRows :
   RecordPatternRow
-  RecordPatternRow `,` RecordPatternRows
+  RecordPatternRow Comma RecordPatternRows
 
 TuplePattern :
   `(` `)`
@@ -791,13 +818,13 @@ AtomicModuleType :
   ModuleOrValuePath
   `(` ModuleType[+Es6Arrow, +With] `)`
   `{` Specifications `}`
-  `module` `type` `of` ModuleExpression
+  `module` `type` `of` ModuleExpr
   Extension
 
-ModuleExpression :
+ModuleExpr :
   FunctorModuleExpr
   PrimaryModExpr
-  Attribute ModuleExpression
+  Attribute ModuleExpr
 
 FunctorModuleExpr :
   [empty]
@@ -808,8 +835,8 @@ PrimaryModExpr :
 AtomicModuleExpr :
    ModulePath
    `{` Implementations `}`
-   `(`ModuleExpression `)`
-   `(`ModuleExpression `:` ModuleType `)`
+   `(`ModuleExpr `)`
+   `(`ModuleExpr `:` ModuleType `)`
    `unpack` `(` Expression `)`
    `unpack` `(` Expression `:` PackageTypeWithAttr`)`
    Extension
@@ -820,11 +847,11 @@ ModuleApplications :
 
 ModuleApplication :
   ConstrainedModExpr
-  ConstrainedModExpr `,` ModuleApplication
+  ConstrainedModExpr Comma ModuleApplication
 
 ConstrainedModExpr :
-  ModuleExpression
-  ModuleExpression `:` ModuleType[+Es6Arrow, +With]
+  ModuleExpr
+  ModuleExpr `:` ModuleType[+Es6Arrow, +With]
 
 PackageTypeWithAttr :
   PackageType

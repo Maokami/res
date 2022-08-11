@@ -18,6 +18,9 @@ object Res {
 
   def parser = JSParser(grammar)
 
+  def implsProd =
+    grammar.nameMap("Implementations").rhsList
+
   lazy val scriptP = parser("Script")
   def specsP = parser("Specifications")
   def specP = parser("Specification")
@@ -30,9 +33,14 @@ object Res {
   def typevarP = parser("TypeVar")
   def typedefP = parser("TypeDefinition")
   def identP = parser("Ident")
-  def atomicP = parser("AtomicTypeExpression")
+  def atomicTypeP = parser("AtomicTypeExpression")
+  def atomicP = parser("AtomicExpr")
   def modulespecP = parser("ModuleSpecification")
   def fielddeclP = parser("AttributedFieldDeclarations")
+  def ifP = parser("IfOrIfLetExpr")
+  def ifcondP = parser("IfCondition")
+  def exprP = parser("Expr", List(false, false))
+  def thenP = parser("ThenBranch")
 
   def testResP(filename: String) =
     implsP.fromFile(s"$RS_PARSE_TEST_DIR/$filename")
