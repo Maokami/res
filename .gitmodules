@@ -1,6 +1,3 @@
-[submodule "esmeta"]
-	path = esmeta
-	url = https://github.com/es-meta/esmeta
 [submodule "rescript-syntax"]
 	path = rescript-syntax
 	url = git@github.com:rescript-lang/syntax.git
