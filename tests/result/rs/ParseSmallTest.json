@@ -98,7 +98,7 @@
   "structure/typeDefinition.res" : false,
   "typedefinition/bsObject.res" : true,
   "typedefinition/constructorDeclaration.res" : false,
-  "typedefinition/diamond.res" : false,
+  "typedefinition/diamond.res" : true,
   "typedefinition/polyvariant.res" : false,
   "typedefinition/privateTypeEquation.res" : true,
   "typedefinition/recordDeclaration.res" : false,

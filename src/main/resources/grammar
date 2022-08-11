@@ -516,7 +516,6 @@ Es6ArrowType :
 Es6ArrowLHS :
   `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias]
   `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias] `=` `?`
-  CoverParenthesizedTypeParameters
 
 CoverParenthesizedTypeParameters :
   `(` `)`
