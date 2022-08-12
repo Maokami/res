@@ -75,6 +75,41 @@ StringCharacters ::
 
 StringCharacter ::
   SourceCharacter but not `"` `\` LineTerminator
+  `\` EscapeSequence
+
+EscapeSequence ::
+  CharacterEscapeSequence
+  `0` [lookahead <! {DecimalDigit}]
+  HexEscapeSequence
+  UnicodeEscapeSequence
+
+CharacterEscapeSequence ::
+  SingleEscapeCharacter
+  NonEscapeCharacter
+
+EscapeCharacter ::
+  SingleEscapeCharacter
+  DecimalDigit
+  `x`
+  `u`
+
+SingleEscapeCharacter :: one of
+  `'` `"` `\` `b` `n` `r` `t`
+
+NonEscapeCharacter ::
+  SourceCharacter but not EscapeCharacter LineTerminator
+
+LineContinuation ::
+  `\` LineTerminatorSequence
+
+HexEscapeSequence ::
+  `x` HexDigit HexDigit
+
+Hex4Digits ::
+  HexDigit HexDigit HexDigit HexDigit
+
+UnicodeEscapeSequence ::
+  `u` Hex4Digits
 
 SourceCharacter ::
   > any Unicode code point
@@ -224,16 +259,17 @@ OperandExpr[TTB, When] :
   TryExpr
   UnaryExpr
   IfOrIfLetExpr
+  [~When] Es6ArrowExpr
   //ForExpr
   //WhileExpr
   //SwitchExpr
   //[+TTB] AsyncArrowExpr
   //AwaitExpr
-  //[~When] Es6ArrowExpr
   //Attribute OperandExpr[?TTB, ?When]
 
 UnaryExpr :
-  AtomicExpr PrimaryExpr[~NoCall]?
+  AtomicExpr
+  AtomicExpr [no LineTerminator here] PrimaryExpr[~NoCall]
   `-` UnaryExpr
   `-.` UnaryExpr
   `+` UnaryExpr
@@ -259,12 +295,40 @@ AtomicExpr :
   ValueOrConstructor
   `(` ConstrainedOrCoercedExpr `)`
   `(` ConstrainedOrCoercedExpr Comma TupleExpr `)`
+  BracedOrRecordExpr
   //<TemplateExpression>
   //<PolyVariantExpression>
   //`list` ListExpression
   //<ArrayExpression>
-  //<BracedOrRecordExpression>
   //<JsX>
+
+BracedOrRecordExpr :
+  `{` `...` ConstrainedOrCoercedExpr `}`
+  `{` String [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? `}`
+  `{` String [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? Semicolon? ExprBlock `}`
+  `{` String `:` Expr[~TTB, ~When] Comma? RecordExprWithStringKeys? `}`
+  `{` String `:` Expr[~TTB, ~When] Comma? RecordExprWithStringKeys? `}`
+  `{` ExprBlock `}`
+  //`{` ValueOrConstructor `}`
+  //`{` `?` RecordExpr `}`
+  //`{` async `}`
+
+RecordExprWithStringKeys :
+  RecordExprRowWithStringKey Comma?
+  RecordExprRowWithStringKey Comma RecordExprWithStringKeys
+
+RecordExprRowWithStringKey :
+  String
+  String `:` Expr[~TTB, ~When]
+
+RecordExpr :
+  RecordExprRow Comma?
+  RecordExprRow Comma RecordExpr
+
+//TODO
+RecordExprRow :
+  ValuePath 
+  Attribute RecordExprRow
 
 IfOrIfLetExpr :
   `if` IfExpr
@@ -309,17 +373,51 @@ ConstrainedExpr :
   Expr[~TTB, ~When]
   Expr[~TTB, ~When] `:` TypeExpression[+Es6Arrow, +Alias]
 
+//TODO : No need LineTerminator for PrimaryExpr0 
 PrimaryExpr[NoCall] :
   `.` ValuePath
   [~NoCall]`.` ValuePath `=` Expr[~TTB, ~When]
-  //<BracketAccess>
-  //<CallExpression>
+  [~NoCall] BracketAccess
+  [~NoCall] CallExpr PrimaryExpr[?NoCall]
   //<TemplateExpression>
   //PrimaryExpr PrimaryExpr
 
-TryExpr :
-  `try` Expression[~TTB, +When] `catch` `{` PatternMatching `}`
+BracketAccess :
+  `[` String `]`
+  `[` String `]` [no LineTerminator here] PrimaryExpr[~NoCall]
+  `[` String `]` `=` Expr[~TTB, ~When]
+  `[` String `]` [no LineTerminator here] PrimaryExpr[~NoCall] `=` Expr[~TTB, ~When]
+  `[` ConstrainedOrCoercedExpr `]`
+  `[` ConstrainedOrCoercedExpr `]` [no LineTerminator here] PrimaryExpr[~NoCall]
+  `[` ConstrainedOrCoercedExpr `]` `=` Expr[~TTB, ~When]
 
+TryExpr :
+  `try` Expr[~TTB, +When] `catch` `{` PatternMatching? `}`
+
+CallExpr :
+  `(``)`
+  `(` Arguments `)`
+
+Arguments :
+  Argument Comma?
+  Argument Comma Arguments
+
+Argument :
+  ArgumentItem
+  `.` ArgumentItem
+
+ArgumentItem :
+  ConstrainedOrCoercedOrUnderScore
+  `~` Lident
+  `~` Lident `?`
+  `~` Lident `=` ConstrainedOrCoercedOrUnderScore
+  `~` Lident `=` `?` ConstrainedOrCoercedOrUnderScore
+  `~` Lident `:` TypeExpression[+Es6Arrow, +Alias]
+
+ConstrainedOrCoercedOrUnderScore :
+  `_`
+  ConstrainedOrCoercedExpr
+  
 PatternMatching :
   PatternMatchCase
   PatternMatchCase PatternMatching
@@ -337,7 +435,7 @@ ExprBlock :
 
 ExprBlockItem :
   `module` Uident ModuleBindingBody Semicolon? ExprBlockItem? ExprBlock
-  `module` FirstClassModuleExpr PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr?
+  `module` FirstClassModuleExpr [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr?
   ExceptionDefinition Semicolon? ExprBlockItem? ExprBlock
   OpenDescription Semicolon? ExprBlockItem? ExprBlock
   LetBindings Semicolon? ExprBlockItem? ExprBlock
