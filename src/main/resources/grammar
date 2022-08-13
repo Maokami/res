@@ -251,21 +251,24 @@ Implementation :
   Attribute Implementation
 
 Expr[TTB, When] :
-  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When]? TernaryExpr?
+  OperandExpr[?TTB, ?When]
+  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When]
+  OperandExpr[?TTB, ?When] TernaryExpr
+  OperandExpr[?TTB, ?When] BinaryExpr[?TTB, ?When] TernaryExpr
 
 OperandExpr[TTB, When] :
   `assert` UnaryExpr
   `lazy` UnaryExpr
   TryExpr
-  UnaryExpr
   IfOrIfLetExpr
-  [~When] Es6ArrowExpr
-  //ForExpr
+  ForExpr
+  SwitchExpr
+  [~When] Es6ArrowExpr[?TTB, ?When]
+  UnaryExpr
+  Attribute OperandExpr[?TTB, ?When]
   //WhileExpr
-  //SwitchExpr
   //[+TTB] AsyncArrowExpr
   //AwaitExpr
-  //Attribute OperandExpr[?TTB, ?When]
 
 UnaryExpr :
   AtomicExpr
@@ -291,6 +294,7 @@ AtomicExpr :
   Constant
   `(``)`
   `module` FirstClassModuleExpr
+  `list{` ListExpr
   Extension
   ValueOrConstructor
   `(` ConstrainedOrCoercedExpr `)`
@@ -298,7 +302,6 @@ AtomicExpr :
   BracedOrRecordExpr
   //<TemplateExpression>
   //<PolyVariantExpression>
-  //`list` ListExpression
   //<ArrayExpression>
   //<JsX>
 
@@ -312,6 +315,13 @@ BracedOrRecordExpr :
   //`{` ValueOrConstructor `}`
   //`{` `?` RecordExpr `}`
   //`{` async `}`
+
+SpreadExpr :
+  `...` ConstrainedOrCoercedExpr
+
+ListExpr :
+  ConstrainedOrCoercedExprs? `}`
+  ConstrainedOrCoercedExprs SpreadExpr `}`
 
 RecordExprWithStringKeys :
   RecordExprRowWithStringKey Comma?
@@ -330,6 +340,43 @@ RecordExprRow :
   ValuePath 
   Attribute RecordExprRow
 
+Es6ArrowExpr[TTB, When] :
+  Parameters ReturnType? `=>` Expr[?TTB, ?When]
+
+ReturnType :
+  `:` TypeExpression[~Es6Arrow, +Alias] 
+  
+Parameters :
+  Lident
+  `_`
+  `(` `)`
+  `(` `.` `)`
+  `(` CurriedOrNotParameterList `)`
+
+CurriedOrNotParameterList :
+  CurriedOrNotParameter Comma?
+  CurriedOrNotParameter Comma CurriedOrNotParameterList
+
+CurriedOrNotParameter :
+  Parameter
+  `.` Parameter
+
+LabelledLident :
+  `~` Lident
+
+//Lookahead Comma Equal Rparen
+Parameter :
+  `type` LidentList ParameterRest?
+  LabelledLident
+  LabelledLident `:` TypeExpression[+Es6Arrow, +Alias]
+  LabelledLident `as` ConstrainedPattern
+  ConstrainedPattern ParameterRest?
+  Attribute Parameter
+
+ParameterRest :
+  `=` `?`
+  `=` ConstrainedOrCoercedExpr
+
 IfOrIfLetExpr :
   `if` IfExpr
 
@@ -346,6 +393,20 @@ ThenBranch :
 
 ElseBranch :
   `{` ExprBlock `}`
+
+ForExpr :
+  `for` Pattern[+Alias, +Or] ForRest `{` ExprBlock `}`
+  `for` `(` Pattern[+Alias, +Or] ForRest `)` `{` ExprBlock `}`
+
+ForRest :
+  `in` Expr[~TTB, ~When] ForRestDirection Expr[~TTB, +When]
+
+ForRestDirection :
+  `to`
+  `downto`
+
+SwitchExpr :
+  `switch` Expr[~TTB, +When] `{` PatternMatching `}`
 
 ConstrainedOrCoercedExpr :
   ConstrainedExpr
@@ -368,6 +429,10 @@ ConstructorArgs :
 ConstrainedExprs :
   ConstrainedExpr Comma?
   ConstrainedExpr Comma ConstrainedExprs
+
+ConstrainedOrCoercedExprs :
+  ConstrainedOrCoercedExpr Comma?
+  ConstrainedOrCoercedExpr Comma ConstrainedOrCoercedExprs
 
 ConstrainedExpr :
   Expr[~TTB, ~When]
@@ -392,7 +457,7 @@ BracketAccess :
   `[` ConstrainedOrCoercedExpr `]` `=` Expr[~TTB, ~When]
 
 TryExpr :
-  `try` Expr[~TTB, +When] `catch` `{` PatternMatching? `}`
+  `try` Expr[~TTB, +When] `catch` `{` PatternMatching `}`
 
 CallExpr :
   `(``)`
@@ -408,11 +473,11 @@ Argument :
 
 ArgumentItem :
   ConstrainedOrCoercedOrUnderScore
-  `~` Lident
-  `~` Lident `?`
-  `~` Lident `=` ConstrainedOrCoercedOrUnderScore
-  `~` Lident `=` `?` ConstrainedOrCoercedOrUnderScore
-  `~` Lident `:` TypeExpression[+Es6Arrow, +Alias]
+  LabelledLident
+  LabelledLident `?`
+  LabelledLident `=` ConstrainedOrCoercedOrUnderScore
+  LabelledLident `=` `?` ConstrainedOrCoercedOrUnderScore
+  LabelledLident `:` TypeExpression[+Es6Arrow, +Alias]
 
 ConstrainedOrCoercedOrUnderScore :
   `_`
@@ -423,7 +488,7 @@ PatternMatching :
   PatternMatchCase PatternMatching
 
 PatternMatchCase :
-  `|` Pattern PatternGuard `=>` ExprBlock
+  `|` Pattern[+Alias, +Or] PatternGuard? `=>` ExprBlock
 
 PatternGuard :
   `when` Expr[~TTB, +When]
@@ -612,8 +677,8 @@ Es6ArrowType :
   Es6ArrowLHS ArrowTypeRest[+Es6Arrow]
 
 Es6ArrowLHS :
-  `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias]
-  `~` Lident `:` TypeExpression[~Es6Arrow, ~Alias] `=` `?`
+  LabelledLident `:` TypeExpression[~Es6Arrow, ~Alias]
+  LabelledLident `:` TypeExpression[~Es6Arrow, ~Alias] `=` `?`
 
 CoverParenthesizedTypeParameters :
   `(` `)`
@@ -633,8 +698,8 @@ TypeParams :
   
 TypeParameter :
   TypeExpression[+Es6Arrow, +Alias]
-  `~` Lident `:` TypeExpression[+Es6Arrow, ~Alias]
-  `~` Lident `:` TypeExpression[+Es6Arrow, ~Alias] `=` `?`
+  LabelledLident `:` TypeExpression[+Es6Arrow, ~Alias]
+  LabelledLident `:` TypeExpression[+Es6Arrow, ~Alias] `=` `?`
   Lident TypeConstructorArgs? ArrowTypeRest[+Es6Arrow]
   `.` TypeParameter
   Attribute TypeParameter
@@ -792,14 +857,14 @@ Payload :
   `(` `:` Specifications `)`
   `(` `:` TypeExpression[+Es6Arrow, +Alias] `)`
   `(` `?` Pattern[+Alias, +Or] `)`
-  `(` `?` Pattern[+Alias, +Or] `when` Expression_OrdExprContext `)`
-  `(` `?` Pattern[+Alias, +Or] `if` Expression_OrdExprContext `)`
+  `(` `?` Pattern[+Alias, +Or] `when` Expr[~TTB, ~When] `)`
+  `(` `?` Pattern[+Alias, +Or] `if` Expr[~TTB, ~When] `)`
   `(` Implementations `)`
 
 PatternGuard :
   [empty] 
-  `when` Expression_WhenExprContext
-  `if` Expression_WhenExprContext
+  `when` Expr[~TTB, +When]
+  `if` Expr[~TTB, +When]
 
 Pattern[Alias, Or] :
   `true`
@@ -819,12 +884,15 @@ Pattern[Alias, Or] :
   HashIdent
   `exception` Pattern[~Alias, ~Or]
   `lazy` Pattern[~Alias, ~Or]
-  `list` ListPattern
+  `list{` ListPattern
   `module` ModulePattern
   Extension
   Attribute Pattern[?Alias, ?Or]
-  [+Alias] Pattern[?Alias, ?Or] TypeAlias
+  [+Alias] Pattern[?Alias, ?Or] Alias
   [+Or] Pattern[?Alias, ?Or] `|` Pattern[?Alias, ~Or]
+
+Alias :
+  `as` Lident
 
 //TODO : String, Codepoint, +-
 Constant :
@@ -868,9 +936,11 @@ ConstructorPatternArgs :
   `(` ConstrainedPatterns `)`
 
 ListPattern :
-  `{` `}`
-  `{` ConstrainedPatterns `}`
-  `{` `...` ConstrainedPatterns `}`
+  ConstrainedPatterns? `}`
+  ConstrainedPatterns SpreadPattern `}`
+
+SpreadPattern :
+  `...` ConstrainedPattern
 
 ModulePattern :
   `(` `)`
@@ -935,8 +1005,8 @@ AtomicModuleExpr :
    `{` Implementations `}`
    `(`ModuleExpr `)`
    `(`ModuleExpr `:` ModuleType `)`
-   `unpack` `(` Expression `)`
-   `unpack` `(` Expression `:` PackageTypeWithAttr`)`
+   `unpack` `(` Expr[~TTB, ~When] `)`
+   `unpack` `(` Expr[~TTB, ~When] `:` PackageTypeWithAttr`)`
    Extension
 
 ModuleApplications :
@@ -1004,12 +1074,3 @@ RecordPatternRowField :
   ValuePath `:` `?` Pattern[+Alias, +Or]
   ValuePath `:` Pattern[+Alias, +Or]
   ValuePath 
-
-Expression :
-  [empty]
-
-Expression_OrdExprContext :
-  [empty]
-
-Expression_WhenExprContext :
-  [empty]
