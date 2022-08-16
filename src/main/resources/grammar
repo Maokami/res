@@ -265,10 +265,13 @@ OperandExpr[TTB, When] :
   SwitchExpr
   [~When] Es6ArrowExpr[?TTB, ?When]
   UnaryExpr
+  [+TTB] AsyncArrowExpr
   Attribute OperandExpr[?TTB, ?When]
   //WhileExpr
-  //[+TTB] AsyncArrowExpr
   //AwaitExpr
+
+AsyncArrowExpr :
+  `async` Es6ArrowExpr[~TTB, ~When]
 
 UnaryExpr :
   AtomicExpr
@@ -293,34 +296,95 @@ AtomicExpr :
   `false`
   Constant
   `(``)`
-  `module` FirstClassModuleExpr
   `list{` ListExpr
-  Extension
   ValueOrConstructor
   `(` ConstrainedOrCoercedExpr `)`
   `(` ConstrainedOrCoercedExpr Comma TupleExpr `)`
+  `module` FirstClassModuleExpr
+  ArrayExpr
   BracedOrRecordExpr
+  Jsx
+  Extension
   //<TemplateExpression>
   //<PolyVariantExpression>
-  //<ArrayExpression>
-  //<JsX>
 
 BracedOrRecordExpr :
-  `{` `...` ConstrainedOrCoercedExpr `}`
-  `{` String [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? `}`
-  `{` String [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? Semicolon? ExprBlock `}`
+  `{` SpreadExpr `,` RecordExpr `}`
+  `{` String PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? `}`
+  `{` String  PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr? Semicolon? ExprBlock `}`
   `{` String `:` Expr[~TTB, ~When] Comma? RecordExprWithStringKeys? `}`
   `{` String `:` Expr[~TTB, ~When] Comma? RecordExprWithStringKeys? `}`
+  `{` ValueOrConstructor Comma RecordExpr`}`
+  `{` ValueOrConstructor `:` OptionalLabel? Expr[~TTB, ~When] `}`
+  `{` ValueOrConstructor `:` OptionalLabel? Expr[~TTB, ~When] Comma RecordExpr `}`
+  `{` ValueOrConstructor Semicolon ExprBlock`}`
+  `{` ValueOrConstructor `=>` Es6ArrowExpr[~TTB, ~When] BinaryExpr[~TTB, ~When]? TernaryExpr? `}`
+  `{` ValueOrConstructor `=>` Es6ArrowExpr[~TTB, ~When] BinaryExpr[~TTB, ~When]? TernaryExpr? Semicolon? ExprBlock `}`
+  `{` ValueOrConstructor PrimaryExpr[~NoCall] BinaryExpr[~TTB, ~When]? TernaryExpr? `}`
+  `{` ValueOrConstructor PrimaryExpr[~NoCall] BinaryExpr[~TTB, ~When]? TernaryExpr? Semicolon? ExprBlock `}`
   `{` ExprBlock `}`
-  //`{` ValueOrConstructor `}`
-  //`{` `?` RecordExpr `}`
-  //`{` async `}`
+  `{` OptionalLabel RecordExpr `}`
+  `{` AsyncArrowExpr ExprBlock`}`
+
+Jsx :
+  `<` JsxOpeningOrSelfClosingElement
+  `<` JsxName
+  `<` JsxFragment
+
+JsxOpeningOrSelfClosingElement :
+  JsxName Children
+  JsxName JsxProps Children
+
+JsxName :
+  ModuleOrValuePath
+
+JsxProps :
+  [empty]
+  JsxProp
+  JsxProp JsxProps
+
+JsxProp :
+  OptionalLabel? Lident
+  Lident `=` OptionalLabel? JsxExpr
+  `{` `...` JsxExpr `}`
+
+JsxExpr :
+  AtomicExpr
+  AtomicExpr PrimaryExpr[~NoCall]
+
+Children :
+  `/` `>`
+  `>` `<` `/` JsxName `>`
+  `>` JsxChildren `<` `/` JsxName `>`
+
+JsxChildren :
+  JsxChildList
+  JsxChildList `<` `/`
+  `...` AtomicExpr PrimaryExpr[+NoCall]?
+
+JsxChildList :
+  JsxChild
+  JsxChildList JsxChild
+
+JsxChild :
+  AtomicExpr
+  AtomicExpr PrimaryExpr[+NoCall]
+  `<` AtomicExpr 
+  `<` AtomicExpr PrimaryExpr[+NoCall]
+
+JsxFragment :
+  `>` JsxChildren? `<` `/` `>`
+
+ArrayExpr :
+  `[` `]`
+  `[` ConstrainedExprs`]`
 
 SpreadExpr :
   `...` ConstrainedOrCoercedExpr
 
 ListExpr :
-  ConstrainedOrCoercedExprs? `}`
+  `}`
+  ConstrainedOrCoercedExprs `}`
   ConstrainedOrCoercedExprs SpreadExpr `}`
 
 RecordExprWithStringKeys :
@@ -332,12 +396,15 @@ RecordExprRowWithStringKey :
   String `:` Expr[~TTB, ~When]
 
 RecordExpr :
-  RecordExprRow Comma?
+  [empty]
+  RecordExprRow
+  RecordExprRow Comma
   RecordExprRow Comma RecordExpr
 
 //TODO
 RecordExprRow :
-  ValuePath 
+  ValuePath
+  ValuePath `:` OptionalLabel? Expr[~TTB, ~When]
   Attribute RecordExprRow
 
 Es6ArrowExpr[TTB, When] :
@@ -420,7 +487,7 @@ CoercedExpr :
 
 ValueOrConstructor :
   ModuleOrValuePath
-  ModuleOrValuePath [no LineTerminator here] ConstructorArgs
+  ModulePath [no LineTerminator here] ConstructorArgs
 
 ConstructorArgs :
   `(` `)`
@@ -440,12 +507,15 @@ ConstrainedExpr :
 
 //TODO : No need LineTerminator for PrimaryExpr0 
 PrimaryExpr[NoCall] :
+  PrimaryExprElem[?NoCall]
+  PrimaryExpr[?NoCall] PrimaryExprElem[?NoCall]
+
+PrimaryExprElem[NoCall] :
   `.` ValuePath
   [~NoCall]`.` ValuePath `=` Expr[~TTB, ~When]
   [~NoCall] BracketAccess
-  [~NoCall] CallExpr PrimaryExpr[?NoCall]
+  [~NoCall] CallExpr
   //<TemplateExpression>
-  //PrimaryExpr PrimaryExpr
 
 BracketAccess :
   `[` String `]`
@@ -464,7 +534,8 @@ CallExpr :
   `(` Arguments `)`
 
 Arguments :
-  Argument Comma?
+  Argument
+  Argument Comma
   Argument Comma Arguments
 
 Argument :
@@ -495,16 +566,18 @@ PatternGuard :
   `if` Expr[~TTB, +When]
 
 ExprBlock :
-  Semicolon? ExprBlockItem?
-  Semicolon? ExprBlockItem? `:>` CoercedExpr
+  [empty]
+  ExprBlockItem
+  ExprBlockItem `:>` CoercedExpr
 
 ExprBlockItem :
-  `module` Uident ModuleBindingBody Semicolon? ExprBlockItem? ExprBlock
+  `module` Uident ModuleBindingBody Semicolon? ExprBlock
   `module` FirstClassModuleExpr [no LineTerminator here] PrimaryExpr[~NoCall]? BinaryExpr[~TTB, ~When]? TernaryExpr?
-  ExceptionDefinition Semicolon? ExprBlockItem? ExprBlock
-  OpenDescription Semicolon? ExprBlockItem? ExprBlock
-  LetBindings Semicolon? ExprBlockItem? ExprBlock
-  Expr[~TTB, ~When] Semicolon? ExprBlockItem? ExprBlock
+  ExceptionDefinition Semicolon? ExprBlock
+  OpenDescription Semicolon? ExprBlock
+  LetBindings Semicolon? ExprBlock
+  Expr[~TTB, ~When]
+  Expr[~TTB, ~When] Semicolon? ExprBlock
 
 ModuleBindingBody :
   `=` ModuleExpr
@@ -1067,10 +1140,10 @@ ValuePath :
 
 ModuleOrValuePath :
   ValueName
-  ModulePath `.` ValueName
   ModulePath
+  ModulePath `.` ValueName
 
 RecordPatternRowField :
+  ValuePath 
   ValuePath `:` `?` Pattern[+Alias, +Or]
   ValuePath `:` Pattern[+Alias, +Or]
-  ValuePath 
